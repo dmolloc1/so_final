@@ -1,87 +1,104 @@
 package gui;
 
+import gui.pages.ConfigPage;
+import gui.pages.DashboardPage;
+import gui.pages.ResultsPage;
+import gui.pages.SettingsPage;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import javafx.application.Application;
-import javafx.stage.Stage;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.layout.VBox;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.stage.FileChooser;
-
-import java.io.File;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 public class MainFX extends Application {
 
-  private File configFile = new File("src/main/resources/data/config.txt");
-  private File processFile = new File("src/main/resources/data/procesos.txt");
+  private final Map<String, VBox> pages = new LinkedHashMap<>();
+  private final Map<String, Button> navButtons = new LinkedHashMap<>();
 
   @Override
   public void start(Stage stage) {
     stage.setTitle("Simulador de Sistema Operativo");
 
-    Label labelConfig = new Label("Config: " + configFile.getName());
-    Label labelProcess = new Label("Procesos: " + processFile.getName());
-    Label labelStatus = new Label("Archivos cargados. Presiona 'Iniciar' para comenzar.");
-    
-    Button btnConfig = new Button("Cambiar archivo de configuración");
-    Button btnProcess = new Button("Cambiar archivo de procesos");
-    Button btnRun = new Button("Iniciar simulación");
+    BorderPane root = new BorderPane();
+    root.setPadding(new Insets(16));
+    root.getStyleClass().add("app-root");
 
-    btnConfig.setOnAction(e -> {
-      File newFile = openFile(stage);
-      if (newFile != null) {
-        configFile = newFile;
-        labelConfig.setText("Config: " + configFile.getName());
-        labelStatus.setText("Configuración actualizada");
-      }
-    });
+    setupPages(stage);
+    HBox navbar = createNavbar();
 
-    btnProcess.setOnAction(e -> {
-      File newFile = openFile(stage);
-      if (newFile != null) {
-        processFile = newFile;
-        labelProcess.setText("Procesos: " + processFile.getName());
-        labelStatus.setText("Archivo de procesos actualizado");
-      }
-    });
+    root.setTop(navbar);
+    root.setCenter(pages.get("config"));
 
-    btnRun.setOnAction(e -> {
-      if (!configFile.exists() || !processFile.exists()) {
-        labelStatus.setText("Error: Los archivos no existen en las rutas especificadas");
-        return;
-      }
-
-      try {
-        labelStatus.setText("Ejecutando simulación...");
-        
-        SimulationRunner.runSimulation(
-          configFile.getAbsolutePath(),
-          processFile.getAbsolutePath()
-        );
-        
-        labelStatus.setText("Simulación completada (ver consola)");
-          
-      } catch (Exception ex) {
-        labelStatus.setText("Error: " + ex.getMessage());
-        ex.printStackTrace();
-      }
-    });
-
-    VBox root = new VBox(10, labelConfig, labelProcess, labelStatus, 
-                         btnConfig, btnProcess, btnRun);
-    root.setStyle("-fx-padding: 20; -fx-font-size: 14px;");
-    stage.setScene(new Scene(root, 900, 600));
-
+    Scene scene = new Scene(root, 1100, 720);
+    String themePath = MainFX.class.getResource("/gui/theme.css").toExternalForm();
+    scene.getStylesheets().add(themePath);
+    stage.setScene(scene);
     stage.show();
   }
 
-  private File openFile(Stage stage) {
-    FileChooser fc = new FileChooser();
-    fc.getExtensionFilters().addAll(
-      new FileChooser.ExtensionFilter("Archivos de texto", "*.txt"),
-      new FileChooser.ExtensionFilter("Todos los archivos", "*.*")
-    );
-    return fc.showOpenDialog(stage);
+  private void setupPages(Stage stage) {
+    pages.put("config", new ConfigPage(stage));
+    pages.put("dashboard", new DashboardPage());
+    pages.put("results", new ResultsPage());
+    pages.put("settings", new SettingsPage());
+  }
+
+  private HBox createNavbar() {
+    HBox navbar = new HBox(12);
+    navbar.setAlignment(Pos.CENTER_LEFT);
+    navbar.setPadding(new Insets(14, 16, 14, 16));
+    navbar.getStyleClass().add("navbar");
+
+    Label brand = new Label("OS Simulator");
+    brand.getStyleClass().add("brand");
+
+    Button configBtn = createNavButton("Configuración", "config");
+    Button dashboardBtn = createNavButton("Dashboard", "dashboard");
+    Button resultsBtn = createNavButton("Resultados", "results");
+    Button settingsBtn = createNavButton("Ajustes", "settings");
+
+    HBox navButtonsRow = new HBox(8, configBtn, dashboardBtn, resultsBtn, settingsBtn);
+    navButtonsRow.setAlignment(Pos.CENTER_LEFT);
+
+    navbar.getChildren().addAll(brand, navButtonsRow);
+    highlightButton("config");
+    return navbar;
+  }
+
+  private Button createNavButton(String text, String pageKey) {
+    Button button = new Button(text);
+    button.getStyleClass().add("nav-button");
+    button.setOnAction(e -> switchPage(pageKey));
+    navButtons.put(pageKey, button);
+    return button;
+  }
+
+  private void switchPage(String pageKey) {
+    VBox page = pages.get(pageKey);
+    if (page != null && !navButtons.isEmpty()) {
+      BorderPane root = (BorderPane) navButtons.values().iterator().next().getScene().getRoot();
+      root.setCenter(page);
+      highlightButton(pageKey);
+    }
+  }
+
+  private void highlightButton(String activeKey) {
+    navButtons.forEach((key, btn) -> {
+      if (key.equals(activeKey)) {
+        if (!btn.getStyleClass().contains("nav-button-active")) {
+          btn.getStyleClass().add("nav-button-active");
+        }
+      } else {
+        btn.getStyleClass().remove("nav-button-active");
+      }
+    });
   }
 
   public static void main(String[] args) {
