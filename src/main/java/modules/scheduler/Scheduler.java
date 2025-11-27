@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Clase abstracta base para todos los algoritmos de planificacion
@@ -27,6 +28,8 @@ public abstract class Scheduler {
     protected int completedProcesses;
     protected int totalCPUTime;
     protected int idleTime;
+
+    private final List<SchedulerListener> listeners;
     
     public Scheduler() {
         this.readyQueue = new ConcurrentLinkedQueue<>();
@@ -39,37 +42,32 @@ public abstract class Scheduler {
         this.completedProcesses = 0;
         this.totalCPUTime = 0;
         this.idleTime = 0;
+        this.listeners = new CopyOnWriteArrayList<>();
     }
     
     /**
      * Anade un proceso a la cola de listos (thread-safe)
      */
     public synchronized void addProcess(Process process) {
-
-    // Aceptar procesos que necesiten ir a READY
-        if (process.getState() != ProcessState.TERMINATED && 
-            process.getState() != ProcessState.RUNNING) {
-            
-            process.setState(ProcessState.READY);
-            readyQueue.offer(process);
-            Logger.debug("Proceso " + process.getPid() + " añadido a cola READY");
-            notifyAll();
-
+        if (process.getState() == ProcessState.TERMINATED ||
+            process.getState() == ProcessState.RUNNING) {
+            return;
         }
-        
+
         // Validar que no esté ya en la cola (evitar duplicados)
         if (readyQueue.contains(process)) {
             Logger.debug("Proceso " + process.getPid() + " ya está en la cola READY");
             return;
         }
-        
+
         if (process.getState() != ProcessState.READY) {
             process.setState(ProcessState.READY);
         }
-      
+
         readyQueue.offer(process);
-        Logger.debug("Proceso " + process.getPid() + " añadido a cola READY (tamaño: " + 
+        Logger.debug("Proceso " + process.getPid() + " añadido a cola READY (tamaño: " +
                     readyQueue.size() + ")");
+        notifyReadyQueueChanged();
         notifyAll();
     }
     
@@ -101,6 +99,7 @@ public abstract class Scheduler {
                 " -> " + newProcess.getPid());
         }
         currentProcess = newProcess;
+        notifyProcessStarted(newProcess);
     }
     
     /**
@@ -111,12 +110,14 @@ public abstract class Scheduler {
         totalWaitingTime += process.getWaitingTime();
         totalTurnaroundTime += process.getTurnaroundTime();
         totalResponseTime += process.getResponseTime();
-        
+
         Logger.log("Proceso " + process.getPid() + " completado en t=" + currentTime);
+        notifyProcessCompleted(process);
     }
     
     public void incrementTime() {
         currentTime++;
+        notifyTimeAdvanced();
     }
     
     public void recordCPUTime(int time) {
@@ -209,5 +210,40 @@ public abstract class Scheduler {
         totalCPUTime = 0;
         idleTime = 0;
         Logger.log("Planificador reseteado");
+    }
+
+    public void addListener(SchedulerListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(SchedulerListener listener) {
+        listeners.remove(listener);
+    }
+
+    private void notifyReadyQueueChanged() {
+        List<Process> snapshot = getReadyQueueSnapshot();
+        for (SchedulerListener listener : listeners) {
+            listener.onReadyQueueChanged(snapshot, currentTime);
+        }
+    }
+
+    private void notifyProcessStarted(Process process) {
+        if (process == null) return;
+        for (SchedulerListener listener : listeners) {
+            listener.onProcessStarted(process, currentTime);
+        }
+    }
+
+    private void notifyProcessCompleted(Process process) {
+        for (SchedulerListener listener : listeners) {
+            listener.onProcessCompleted(process, currentTime);
+            listener.onReadyQueueChanged(getReadyQueueSnapshot(), currentTime);
+        }
+    }
+
+    private void notifyTimeAdvanced() {
+        for (SchedulerListener listener : listeners) {
+            listener.onTimeAdvanced(currentProcess, currentTime);
+        }
     }
 }

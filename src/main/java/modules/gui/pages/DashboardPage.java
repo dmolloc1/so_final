@@ -5,8 +5,14 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.layout.*;
+import model.Process;
 import modules.gui.components.*;
+import modules.scheduler.Scheduler;
 public class DashboardPage extends VBox {
+
+    private final ExePanel exePanel;
+    private final ProPanel proPanel;
+    private final SchedulerVisualizer visualizer;
 
     public DashboardPage() {
         setSpacing(20);
@@ -54,13 +60,21 @@ public class DashboardPage extends VBox {
 
         grid.getRowConstraints().addAll(row1, row2);
 
+        exePanel = new ExePanel();
+        proPanel = new ProPanel();
+        visualizer = new SchedulerVisualizer(exePanel, proPanel);
+
         // Paneles
-        grid.add(new ExePanel(), 0, 0);
-        grid.add(new ProPanel(), 1, 0);
+        grid.add(exePanel, 0, 0);
+        grid.add(proPanel, 1, 0);
         grid.add(new MemPanel(), 0, 1);
         grid.add(new LogsPanel(), 1, 1);
 
         getChildren().addAll(topBar, grid);
+    }
+
+    public void bindScheduler(Scheduler scheduler, java.util.List<Process> processes) {
+        visualizer.bind(scheduler, processes);
     }
 
 }

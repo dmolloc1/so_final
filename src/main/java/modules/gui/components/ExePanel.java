@@ -3,8 +3,11 @@ package modules.gui.components;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 public class ExePanel  extends VBox {
+
+    private final GanttChart ganttChart;
 
     public ExePanel() {
         setSpacing(10);
@@ -13,6 +16,15 @@ public class ExePanel  extends VBox {
 
         Label title = new Label("Panel de Ejecución");
         title.getStyleClass().add("card-title");
-        getChildren().add(title);
+
+        ganttChart = new GanttChart();
+        ganttChart.setMinHeight(140);
+        VBox.setVgrow(ganttChart, Priority.ALWAYS);
+
+        getChildren().addAll(title, ganttChart);
+    }
+
+    public GanttChart getGanttChart() {
+        return ganttChart;
     }
 }
