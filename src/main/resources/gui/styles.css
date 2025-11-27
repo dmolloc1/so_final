@@ -194,3 +194,68 @@
 .logs-panel{
   -fx-background-color: #0f0a1a;
 }
+
+.gantt-container {
+  -fx-background-color: rgba(255,255,255,0.02);
+  -fx-background-radius: 12;
+  -fx-padding: 4 0 0 0;
+}
+
+.gantt-area {
+  -fx-background-color: #120c1f;
+  -fx-background-radius: 12;
+  -fx-border-color: rgba(255,255,255,0.08);
+  -fx-border-radius: 12;
+}
+
+.gantt-block {
+  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.32), 12, 0.24, 0, 6);
+}
+
+.gantt-label {
+  -fx-text-fill: white;
+  -fx-font-weight: 800;
+}
+
+.gantt-axis {
+  -fx-padding: 6 2 0 2;
+}
+
+.gantt-axis-label {
+  -fx-text-fill: #9ea1aa;
+  -fx-font-size: 11px;
+}
+
+.queue-title {
+  -fx-text-fill: #d7c8f8;
+  -fx-font-weight: 800;
+}
+
+.queue-column {
+  -fx-background-color: rgba(255,255,255,0.02);
+  -fx-background-radius: 12;
+  -fx-padding: 6 0 0 0;
+}
+
+.queue-chip {
+  -fx-background-color: rgba(255,255,255,0.04);
+  -fx-background-radius: 14;
+  -fx-padding: 10 12;
+  -fx-border-color: rgba(255,255,255,0.08);
+  -fx-border-radius: 14;
+  -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.18), 8, 0.18, 0, 2);
+}
+
+.queue-chip-icon-wrapper {
+  -fx-padding: 4;
+}
+
+.queue-chip-icon {
+  -fx-text-fill: white;
+  -fx-font-weight: 800;
+}
+
+.queue-chip-text {
+  -fx-text-fill: #f5e9ff;
+  -fx-font-weight: 700;
+}
