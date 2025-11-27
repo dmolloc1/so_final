@@ -3,10 +3,9 @@ package gui.pages;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-public class DashboardPage extends VBox {
-
-    public DashboardPage() {
-        Label title = new Label("Dashboard");
+public class ResultadosPage extends VBox{
+    public ResultadosPage() {
+        Label title = new Label("Resultados");
 
         getChildren().add(title);
     }
