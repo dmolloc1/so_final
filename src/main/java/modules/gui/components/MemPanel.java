@@ -45,7 +45,18 @@ public class MemPanel extends VBox {
 
     private final TableView<PageRow> pageTable = new TableView<>();
     private final TableView<FrameRow> frameTable = new TableView<>();
+    private final TableView<AccessEvent> accessTable = new TableView<>();
     private final Label victimBanner = new Label();
+
+    private final Label faultsValue = new Label("0");
+    private final Label replacementsValue = new Label("0");
+    private final Label algorithmValue = new Label("-");
+    private final Label occupancyValue = new Label("0/0 marcos usados");
+
+    private MemoryGrid memoryGrid;
+    private VBox frameGridBox;
+    private int lastAccesses = 0;
+    private final ObservableList<AccessEvent> history = FXCollections.observableArrayList();
 
     public MemPanel() {
         setSpacing(14);
@@ -54,9 +65,11 @@ public class MemPanel extends VBox {
 
         HBox header = buildHeader();
         HBox selectorBar = buildSelectorBar();
+        HBox summary = buildSummaryBar();
+        HBox liveRow = buildLiveRow();
         GridPane tables = buildTables();
 
-        getChildren().addAll(header, selectorBar, tables, victimBanner);
+        getChildren().addAll(header, selectorBar, summary, liveRow, tables, victimBanner);
 
         startAutoRefresh();
     }
@@ -87,6 +100,47 @@ public class MemPanel extends VBox {
         HBox bar = new HBox(10, processSelector, statusLabel);
         bar.setAlignment(Pos.CENTER_LEFT);
         return bar;
+    }
+
+    private HBox buildSummaryBar() {
+        VBox faultsBox = buildMetricBox("Page Faults", faultsValue, "-fx-text-fill: #f97316;");
+        VBox replacementsBox = buildMetricBox("Reemplazos", replacementsValue, "-fx-text-fill: #f43f5e;");
+        VBox algorithmBox = buildMetricBox("Algoritmo", algorithmValue, "");
+        VBox occupancyBox = buildMetricBox("Ocupación", occupancyValue, "-fx-text-fill: #22c55e;");
+
+        HBox bar = new HBox(12, faultsBox, replacementsBox, algorithmBox, occupancyBox);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        return bar;
+    }
+
+    private VBox buildMetricBox(String title, Label valueLabel, String extraStyle) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("card-subtitle");
+
+        valueLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: 700;" + extraStyle);
+
+        VBox box = new VBox(2, titleLabel, valueLabel);
+        box.getStyleClass().add("metric-box");
+        return box;
+    }
+
+    private HBox buildLiveRow() {
+        frameGridBox = new VBox(8);
+        frameGridBox.setAlignment(Pos.TOP_LEFT);
+        frameGridBox.getChildren().add(buildSectionTitle("Frames en vivo"));
+        frameGridBox.getChildren().add(new Label("Esperando datos de memoria..."));
+        VBox.setVgrow(frameGridBox, Priority.ALWAYS);
+
+        configureAccessTable();
+        VBox historyBox = new VBox(8, buildSectionTitle("Accesos recientes"), accessTable);
+        historyBox.setAlignment(Pos.TOP_LEFT);
+        VBox.setVgrow(historyBox, Priority.ALWAYS);
+
+        HBox row = new HBox(14, frameGridBox, historyBox);
+        row.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(frameGridBox, Priority.ALWAYS);
+        HBox.setHgrow(historyBox, Priority.SOMETIMES);
+        return row;
     }
 
     private GridPane buildTables() {
@@ -197,6 +251,44 @@ public class MemPanel extends VBox {
         });
     }
 
+    private void configureAccessTable() {
+        accessTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        accessTable.setPlaceholder(new Label("Sin accesos registrados"));
+
+        TableColumn<AccessEvent, Integer> orderCol = new TableColumn<>("#");
+        orderCol.setCellValueFactory(new PropertyValueFactory<>("order"));
+        orderCol.setMaxWidth(60);
+
+        TableColumn<AccessEvent, String> accessCol = new TableColumn<>("Acceso");
+        accessCol.setCellValueFactory(new PropertyValueFactory<>("access"));
+
+        TableColumn<AccessEvent, String> resultCol = new TableColumn<>("Resultado");
+        resultCol.setCellValueFactory(new PropertyValueFactory<>("result"));
+
+        TableColumn<AccessEvent, String> movementCol = new TableColumn<>("Movimiento");
+        movementCol.setCellValueFactory(new PropertyValueFactory<>("movement"));
+
+        accessTable.getColumns().addAll(orderCol, accessCol, resultCol, movementCol);
+        accessTable.setItems(history);
+
+        accessTable.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(AccessEvent item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setStyle("");
+                    return;
+                }
+
+                if (item.isFault()) {
+                    setStyle("-fx-background-color: rgba(251,113,133,0.16);");
+                } else {
+                    setStyle("-fx-background-color: rgba(74,222,128,0.12);");
+                }
+            }
+        });
+    }
+
     private void startAutoRefresh() {
         Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(0.6), e -> refreshFromContext()));
         timeline.setCycleCount(Timeline.INDEFINITE);
@@ -210,9 +302,12 @@ public class MemPanel extends VBox {
         }
 
         MemorySnapshot snapshot = manager.captureSnapshot();
+        ensureMemoryGrid(manager);
         String selectedPid = refreshProcessOptions(snapshot);
         updateIndicator(snapshot);
         updateStatus(snapshot);
+        updateSummary(manager, snapshot);
+        updateHistory(snapshot);
 
         if (selectedPid != null) {
             updatePageTable(manager, snapshot, selectedPid);
@@ -221,7 +316,17 @@ public class MemPanel extends VBox {
         }
 
         updateFrameTable(snapshot);
+        updateMemoryGrid(snapshot);
         updateVictimBanner(snapshot);
+    }
+
+    private void ensureMemoryGrid(MemoryManager manager) {
+        if (memoryGrid != null) {
+            return;
+        }
+
+        memoryGrid = new MemoryGrid(manager.getTotalFrames());
+        frameGridBox.getChildren().setAll(buildSectionTitle("Frames en vivo"), memoryGrid);
     }
 
     private String refreshProcessOptions(MemorySnapshot snapshot) {
@@ -261,6 +366,15 @@ public class MemPanel extends VBox {
 
         String base = "Acceso " + snapshot.getLastRequestedPid() + ": página " + snapshot.getLastRequestedPage();
         statusLabel.setText(snapshot.isLastFault() ? base + " (Fault)" : base + " (Hit)");
+    }
+
+    private void updateSummary(MemoryManager manager, MemorySnapshot snapshot) {
+        faultsValue.setText(String.valueOf(snapshot.getPageFaults()));
+        replacementsValue.setText(String.valueOf(snapshot.getPageReplacements()));
+        algorithmValue.setText(manager.getAlgorithmName());
+
+        long occupied = snapshot.getFrames().stream().filter(FrameState::occupied).count();
+        occupancyValue.setText(occupied + "/" + snapshot.getTotalFrames() + " marcos usados");
     }
 
     private void updatePageTable(MemoryManager manager, MemorySnapshot snapshot, String pid) {
@@ -314,6 +428,40 @@ public class MemPanel extends VBox {
         }
 
         frameTable.getItems().setAll(rows);
+    }
+
+    private void updateMemoryGrid(MemorySnapshot snapshot) {
+        if (memoryGrid == null) {
+            return;
+        }
+
+        List<String> contents = snapshot.getFrames().stream()
+                .map(frame -> frame.occupied() ? frame.processId() + " : P" + frame.pageNumber() : null)
+                .toList();
+
+        memoryGrid.updateFrames(contents, snapshot.getLastPageIn(), snapshot.getLastPageOut());
+    }
+
+    private void updateHistory(MemorySnapshot snapshot) {
+        if (snapshot.getTotalAccesses() <= lastAccesses) {
+            return;
+        }
+
+        AccessEvent event = new AccessEvent(
+                snapshot.getTotalAccesses(),
+                snapshot.getLastRequestedPid(),
+                snapshot.getLastRequestedPage(),
+                snapshot.isLastFault(),
+                snapshot.getLastPageIn(),
+                snapshot.getLastPageOut()
+        );
+
+        history.add(0, event);
+        if (history.size() > 14) {
+            history.remove(history.size() - 1);
+        }
+
+        lastAccesses = snapshot.getTotalAccesses();
     }
 
     private void updateVictimBanner(MemorySnapshot snapshot) {
@@ -381,6 +529,53 @@ public class MemPanel extends VBox {
 
         public String getStatus() {
             return status;
+        }
+    }
+
+    public static class AccessEvent {
+        private final int order;
+        private final String access;
+        private final String result;
+        private final String movement;
+        private final boolean fault;
+
+        public AccessEvent(int order, String pid, int page, boolean fault, int in, int out) {
+            this.order = order;
+            this.fault = fault;
+            this.access = (pid == null || pid.isBlank()) ? "-" : pid + " → P" + page;
+            this.result = fault ? "Page Fault" : "Hit";
+
+            StringBuilder sb = new StringBuilder();
+            if (in >= 0) {
+                sb.append("In: ").append(in);
+            }
+            if (out >= 0) {
+                if (sb.length() > 0) {
+                    sb.append(" | ");
+                }
+                sb.append("Out: ").append(out);
+            }
+            this.movement = sb.length() == 0 ? "Sin movimiento" : sb.toString();
+        }
+
+        public int getOrder() {
+            return order;
+        }
+
+        public String getAccess() {
+            return access;
+        }
+
+        public String getResult() {
+            return result;
+        }
+
+        public String getMovement() {
+            return movement;
+        }
+
+        public boolean isFault() {
+            return fault;
         }
     }
 }
