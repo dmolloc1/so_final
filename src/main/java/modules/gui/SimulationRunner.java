@@ -3,6 +3,7 @@ package modules.gui;
 import model.Config;
 import model.Process;
 import modules.memory.MemoryManager;
+import modules.gui.SimulationContext;
 import modules.scheduler.Scheduler;
 import modules.sync.SimulationEngine;
 import utils.FileParser;
@@ -32,9 +33,10 @@ public class SimulationRunner {
     }
     
     Logger.log(processes.size() + " procesos cargados correctamente");
-    
+
     Scheduler scheduler = SimulationFactory.createScheduler(config);
     MemoryManager memoryManager = SimulationFactory.createMemoryManager(config);
+    SimulationContext.setMemoryManager(memoryManager);
     
     printSystemConfiguration(config, processes, scheduler, memoryManager);
     Logger.section("INICIANDO SIMULACION");

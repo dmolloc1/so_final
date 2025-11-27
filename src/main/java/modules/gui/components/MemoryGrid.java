@@ -41,6 +41,10 @@ public class MemoryGrid extends GridPane {
         }
     }
 
+    public int getFrameCount() {
+        return frameCount;
+    }
+
     public void updateFrames(List<String> frameContents, int pageInIndex, int pageOutIndex) {
         for (int i = 0; i < frameCount; i++) {
             String content = frameContents.get(i);
