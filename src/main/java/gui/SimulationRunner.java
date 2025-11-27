@@ -13,8 +13,11 @@ import java.util.List;
 
 public class SimulationRunner {
 
-  public static void runSimulation(String configPath, String processPath) throws Exception {
-      
+  public record SimulationResult(Config config, Scheduler scheduler,
+                                 MemoryManager memoryManager, List<Process> processes) {}
+
+  public static SimulationResult runSimulation(String configPath, String processPath) throws Exception {
+
     FileParser.validateFile(configPath);
     FileParser.validateFile(processPath);
     
@@ -35,10 +38,10 @@ public class SimulationRunner {
     }
     
     Logger.log(processes.size() + " procesos cargados correctamente");
-    
+
     Scheduler scheduler = SimulationFactory.createScheduler(config);
     MemoryManager memoryManager = SimulationFactory.createMemoryManager(config);
-    
+
     printSystemConfiguration(config, processes, scheduler, memoryManager);
     Logger.section("INICIANDO SIMULACIÓN");
     SimulationEngine engine = new SimulationEngine(
@@ -46,6 +49,7 @@ public class SimulationRunner {
     );
     engine.run();
     Logger.printSummary();
+    return new SimulationResult(config, scheduler, memoryManager, List.copyOf(processes));
   }
     
   private static void printSystemConfiguration(

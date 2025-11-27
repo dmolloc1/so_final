@@ -60,6 +60,36 @@ public abstract class MemoryManager {
   protected int pageFaults;
   protected int pageReplacements;
   protected int totalPageLoads;
+
+  // Información para visualización
+  protected int lastFaultFrame = -1;
+  protected int lastReplacedFrame = -1;
+
+  public enum FrameStatus {
+      LOADED,
+      PAGE_FAULT,
+      REPLACED,
+      EMPTY
+  }
+
+  public static class MemoryFrameInfo {
+      private final int frameIndex;
+      private final String processId;
+      private final int pageNumber;
+      private final FrameStatus status;
+
+      public MemoryFrameInfo(int frameIndex, String processId, int pageNumber, FrameStatus status) {
+          this.frameIndex = frameIndex;
+          this.processId = processId;
+          this.pageNumber = pageNumber;
+          this.status = status;
+      }
+
+      public int getFrameIndex() { return frameIndex; }
+      public String getProcessId() { return processId; }
+      public int getPageNumber() { return pageNumber; }
+      public FrameStatus getStatus() { return status; }
+  }
   
   public MemoryManager(int totalFrames) {
       if (totalFrames <= 0) {
@@ -84,6 +114,8 @@ public abstract class MemoryManager {
   
   // Intenta cargar una pagina en memoria
   public synchronized boolean loadPage(Process process, int pageNumber) {
+      lastFaultFrame = -1;
+      lastReplacedFrame = -1;
       currentTime++;
       
       String pid = process.getPid();
@@ -106,6 +138,7 @@ public abstract class MemoryManager {
       if (freeFrame != -1) {
           // Hay marco libre
           loadPageToFrame(freeFrame, pid, pageNumber);
+          lastFaultFrame = freeFrame;
           return true;
       }
       
@@ -114,6 +147,8 @@ public abstract class MemoryManager {
       
       if (victimFrame != -1) {
           replacePage(victimFrame, pid, pageNumber);
+          lastFaultFrame = victimFrame;
+          lastReplacedFrame = victimFrame;
           return true;
       }
       
@@ -199,6 +234,37 @@ public abstract class MemoryManager {
       processPageMap.remove(pid);
       Logger.debug("[MEM] Paginas del proceso " + pid + " liberadas");
   }
+
+  /**
+   * Devuelve una instantánea de los marcos para la visualización en GUI.
+   */
+  public synchronized List<MemoryFrameInfo> getFrameSnapshot() {
+      List<MemoryFrameInfo> snapshot = new ArrayList<>(totalFrames);
+
+      for (int i = 0; i < totalFrames; i++) {
+          Frame frame = frames[i];
+          FrameStatus status = FrameStatus.EMPTY;
+          String pid = "Free";
+          int page = -1;
+
+          if (frame.isOccupied()) {
+              pid = frame.getProcessId();
+              page = frame.getPageNumber();
+
+              if (i == lastReplacedFrame) {
+                  status = FrameStatus.REPLACED;
+              } else if (i == lastFaultFrame) {
+                  status = FrameStatus.PAGE_FAULT;
+              } else {
+                  status = FrameStatus.LOADED;
+              }
+          }
+
+          snapshot.add(new MemoryFrameInfo(i, pid, page, status));
+      }
+
+      return snapshot;
+  }
   
   // Obtiene el estado actual de los marcos
   public synchronized String getMemoryState() {
@@ -269,6 +335,8 @@ public abstract class MemoryManager {
       pageFaults = 0;
       pageReplacements = 0;
       totalPageLoads = 0;
+      lastFaultFrame = -1;
+      lastReplacedFrame = -1;
       Logger.log("[MEM] Memoria reseteada");
   }
 }
