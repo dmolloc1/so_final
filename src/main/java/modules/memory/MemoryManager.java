@@ -63,6 +63,9 @@ public abstract class MemoryManager {
   protected int totalAccesses;
   protected int lastPageIn = -1;
   protected int lastPageOut = -1;
+  protected String lastRequestedPid = "";
+  protected int lastRequestedPage = -1;
+  protected boolean lastFault = false;
   
   public MemoryManager(int totalFrames) {
       if (totalFrames <= 0) {
@@ -91,6 +94,9 @@ public abstract class MemoryManager {
       currentTime++;
       totalAccesses++;
 
+      lastRequestedPid = process.getPid();
+      lastRequestedPage = pageNumber;
+
       String pid = process.getPid();
 
       // Verificar si la pagina ya esta cargada
@@ -98,12 +104,14 @@ public abstract class MemoryManager {
           Logger.debug("[MEM] Pagina " + pageNumber + " del proceso " + pid + " ya esta en memoria");
           lastPageIn = accessPage(pid, pageNumber);
           lastPageOut = -1;
+          lastFault = false;
           return true;
       }
-      
+
       // Page fault
       pageFaults++;
       process.incrementPageFaults();
+      lastFault = true;
       Logger.logPageFault(pid, pageNumber, currentTime);
       
       // Buscar marco libre
@@ -112,6 +120,7 @@ public abstract class MemoryManager {
       if (freeFrame != -1) {
           // Hay marco libre
           loadPageToFrame(freeFrame, pid, pageNumber);
+          lastFault = true;
           return true;
       }
       
@@ -120,6 +129,7 @@ public abstract class MemoryManager {
       
       if (victimFrame != -1) {
           replacePage(victimFrame, pid, pageNumber);
+          lastFault = true;
           return true;
       }
       
@@ -185,6 +195,7 @@ public abstract class MemoryManager {
       totalPageLoads++;
       lastPageIn = frameIndex;
       lastPageOut = frameIndex;
+      lastFault = true;
 
       Logger.logPageReplacement(victimPid, victimPage, newPid, newPage, currentTime);
   }
@@ -277,7 +288,9 @@ public abstract class MemoryManager {
                   i,
                   frame.getProcessId(),
                   frame.getPageNumber(),
-                  frame.isOccupied()
+                  frame.isOccupied(),
+                  frame.getLoadTime(),
+                  frame.getLastAccessTime()
               )
           );
       }
@@ -290,7 +303,10 @@ public abstract class MemoryManager {
           totalAccesses,
           totalFrames,
           lastPageIn,
-          lastPageOut
+          lastPageOut,
+          lastRequestedPid,
+          lastRequestedPage,
+          lastFault
       );
   }
   
@@ -321,6 +337,9 @@ public abstract class MemoryManager {
       totalAccesses = 0;
       lastPageIn = -1;
       lastPageOut = -1;
+      lastRequestedPid = "";
+      lastRequestedPage = -1;
+      lastFault = false;
       Logger.log("[MEM] Memoria reseteada");
   }
 
@@ -333,10 +352,14 @@ public abstract class MemoryManager {
       private final int totalFrames;
       private final int lastPageIn;
       private final int lastPageOut;
+      private final String lastRequestedPid;
+      private final int lastRequestedPage;
+      private final boolean lastFault;
 
       public MemorySnapshot(List<FrameState> frames, int pageFaults, int pageReplacements,
                             int totalPageLoads, int totalAccesses, int totalFrames,
-                            int lastPageIn, int lastPageOut) {
+                            int lastPageIn, int lastPageOut, String lastRequestedPid,
+                            int lastRequestedPage, boolean lastFault) {
           this.frames = frames;
           this.pageFaults = pageFaults;
           this.pageReplacements = pageReplacements;
@@ -345,6 +368,9 @@ public abstract class MemoryManager {
           this.totalFrames = totalFrames;
           this.lastPageIn = lastPageIn;
           this.lastPageOut = lastPageOut;
+          this.lastRequestedPid = lastRequestedPid;
+          this.lastRequestedPage = lastRequestedPage;
+          this.lastFault = lastFault;
       }
 
       public List<FrameState> getFrames() {
@@ -379,6 +405,19 @@ public abstract class MemoryManager {
           return lastPageOut;
       }
 
-      public record FrameState(int index, String processId, int pageNumber, boolean occupied) {}
+      public String getLastRequestedPid() {
+          return lastRequestedPid;
+      }
+
+      public int getLastRequestedPage() {
+          return lastRequestedPage;
+      }
+
+      public boolean isLastFault() {
+          return lastFault;
+      }
+
+      public record FrameState(int index, String processId, int pageNumber,
+                               boolean occupied, int loadTime, int lastAccess) {}
   }
 }
