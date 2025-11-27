@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="gui.DashboardController">
+
+    <top>
+        <VBox spacing="8" style="-fx-background-color: #f6f6f8; -fx-padding: 16 20;">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Label text="CPU Simulator" style="-fx-font-size: 22; -fx-font-weight: bold;" />
+                <Label text="Dashboard" style="-fx-text-fill: #6b7280; -fx-font-size: 14;" />
+                <Pane HBox.hgrow="ALWAYS" />
+                <Button text="Limpiar log" fx:id="clearLogButton" onAction="#handleClearLog" />
+                <Button text="Iniciar simulación" fx:id="runButton" onAction="#handleRun"
+                        style="-fx-background-color: #3713ec; -fx-text-fill: white;" />
+            </HBox>
+
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Label text="Config:" />
+                <Label fx:id="configLabel" style="-fx-font-weight: bold;" />
+                <Button text="Cambiar" onAction="#handleChangeConfig" />
+                <Label text="Procesos:" />
+                <Label fx:id="processLabel" style="-fx-font-weight: bold;" />
+                <Button text="Cambiar" onAction="#handleChangeProcess" />
+                <Pane HBox.hgrow="ALWAYS" />
+                <Label fx:id="statusLabel" text="Listo para simular" />
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <GridPane hgap="14" vgap="14">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <columnConstraints>
+                <ColumnConstraints percentWidth="50" />
+                <ColumnConstraints percentWidth="50" />
+            </columnConstraints>
+
+            <rowConstraints>
+                <RowConstraints percentHeight="50" />
+                <RowConstraints percentHeight="50" />
+            </rowConstraints>
+
+            <!-- PANEL EJECUCIÓN -->
+            <VBox spacing="8" GridPane.rowIndex="0" GridPane.columnIndex="0"
+                  style="-fx-background-color: white; -fx-padding: 16; -fx-border-color: #e5e7eb;
+                         -fx-border-radius: 10; -fx-background-radius: 10;">
+                <Label text="Panel de Ejecución" style="-fx-font-size: 18; -fx-font-weight: bold;" />
+
+                <GridPane hgap="10" vgap="6">
+                    <Label text="Planificador:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                    <Label fx:id="schedulerLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+                    <Label text="Memoria:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+                    <Label fx:id="replacementLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+                    <Label text="Marcos:" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+                    <Label fx:id="framesLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+
+                    <Label text="Quantum:" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+                    <Label fx:id="quantumLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+
+                    <Label text="Unidad de tiempo:" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+                    <Label fx:id="timeUnitLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                </GridPane>
+
+                <Label text="Línea de tiempo (Gantt)" style="-fx-font-weight: bold;" />
+
+                <ScrollPane fitToWidth="true" prefHeight="160" style="-fx-background-color: transparent;">
+                    <VBox fx:id="timelineContainer" spacing="6"
+                          style="-fx-background-color: #f9fafb; -fx-background-radius: 8; 
+                                 -fx-border-color: #e5e7eb; -fx-border-radius: 8;">
+                        <padding>
+                            <Insets top="8" right="8" bottom="8" left="8"/>
+                        </padding>
+                        <Label text="Los eventos de CPU aparecerán aquí en tiempo real." wrapText="true" />
+                    </VBox>
+                </ScrollPane>
+            </VBox>
+
+            <!-- PANEL COLAS -->
+            <VBox spacing="8" GridPane.rowIndex="0" GridPane.columnIndex="1"
+                  style="-fx-background-color: white; -fx-padding: 16; -fx-border-color: #e5e7eb;
+                         -fx-border-radius: 10; -fx-background-radius: 10;">
+                <Label text="Colas de Procesos" style="-fx-font-size: 18; -fx-font-weight: bold;" />
+                <HBox spacing="12">
+
+                    <VBox spacing="6" VBox.vgrow="ALWAYS"
+                          style="-fx-background-color: #f9fafb; -fx-padding: 10; -fx-background-radius: 8;">
+                        <Label text="Ready" style="-fx-font-weight: bold;" />
+                        <ListView fx:id="readyList" prefHeight="180" />
+                    </VBox>
+
+                    <VBox spacing="6" VBox.vgrow="ALWAYS"
+                          style="-fx-background-color: #f9fafb; -fx-padding: 10; -fx-background-radius: 8;">
+                        <Label text="Blocked (I/O)" style="-fx-font-weight: bold;" />
+                        <ListView fx:id="ioBlockedList" prefHeight="180" />
+                    </VBox>
+
+                    <VBox spacing="6" VBox.vgrow="ALWAYS"
+                          style="-fx-background-color: #f9fafb; -fx-padding: 10; -fx-background-radius: 8;">
+                        <Label text="Blocked (Memoria)" style="-fx-font-weight: bold;" />
+                        <ListView fx:id="memoryBlockedList" prefHeight="180" />
+                    </VBox>
+
+                </HBox>
+            </VBox>
+
+            <!-- PANEL MEMORIA -->
+            <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="0"
+                  style="-fx-background-color: white; -fx-padding: 16; -fx-border-color: #e5e7eb;
+                         -fx-border-radius: 10; -fx-background-radius: 10;">
+                <Label text="Panel de Memoria Virtual" style="-fx-font-size: 18; -fx-font-weight: bold;" />
+
+                <TableView fx:id="memoryTable" prefHeight="240">
+                    <columns>
+                        <TableColumn fx:id="frameColumn" text="Frame #" prefWidth="80" />
+                        <TableColumn fx:id="processColumn" text="Proceso" prefWidth="100" />
+                        <TableColumn fx:id="pageColumn" text="Página" prefWidth="80" />
+                        <TableColumn fx:id="statusColumn" text="Estado" prefWidth="140" />
+                    </columns>
+                </TableView>
+
+                <Label text="Los cambios en marcos se mostrarán mientras se ejecuta la simulación."
+                       wrapText="true" />
+            </VBox>
+
+            <!-- LOGS -->
+            <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                  style="-fx-background-color: white; -fx-padding: 16; -fx-border-color: #e5e7eb;
+                         -fx-border-radius: 10; -fx-background-radius: 10;">
+                <Label text="Logs en Tiempo Real" style="-fx-font-size: 18; -fx-font-weight: bold;" />
+                <ListView fx:id="logList" VBox.vgrow="ALWAYS" />
+            </VBox>
+
+        </GridPane>
+    </center>
+
+</BorderPane>

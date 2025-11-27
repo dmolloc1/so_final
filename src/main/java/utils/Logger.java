@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Registra todos los eventos importantes del sistema.
@@ -20,6 +21,7 @@ public class Logger {
   private static boolean enableConsoleOutput = true;
   private static boolean enableFileOutput = false;
   private static String logFilePath = "simulation.log";
+  private static final List<LogListener> listeners = new CopyOnWriteArrayList<>();
   
   /**
    * Entrada individual de log
@@ -64,22 +66,33 @@ public class Logger {
       EVENT
   }
 
+  /**
+   * Listener que permite reaccionar a nuevas entradas de log.
+   */
+  public interface LogListener {
+      void onLog(Logger.LogEntry entry);
+  }
+
   public static void log(String message) {
       log(message, LogLevel.INFO);
   }
-  
+
   //Log de un nivel
   public static void log(String message, LogLevel level) {
       LogEntry entry = new LogEntry(message, level);
-      logs.add(entry);
-      
+      synchronized (logs) {
+          logs.add(entry);
+      }
+
       if (enableConsoleOutput) {
           System.out.println(entry);
       }
-      
+
       if (enableFileOutput) {
           appendToFile(entry);
       }
+
+      notifyListeners(entry);
   }
   
   //Log para cambio de estado de un proceso
@@ -134,13 +147,17 @@ public class Logger {
   }
  
   public static List<LogEntry> getAllLogs() {
-      return new ArrayList<>(logs);
+      synchronized (logs) {
+          return new ArrayList<>(logs);
+      }
   }
   
   public static List<LogEntry> getLogsByLevel(LogLevel level) {
-      return logs.stream()
-              .filter(entry -> entry.getLevel() == level)
-              .toList();
+      synchronized (logs) {
+          return logs.stream()
+                  .filter(entry -> entry.getLevel() == level)
+                  .toList();
+      }
   }
   
   public static void clear() {
@@ -195,7 +212,7 @@ public class Logger {
   public static void printSummary() {
       System.out.println(getSummary());
   }
-  
+
   public static void setEnableConsoleOutput(boolean enable) {
       enableConsoleOutput = enable;
   }
@@ -216,5 +233,19 @@ public class Logger {
       separator();
       log("-----" + title + "----");
       separator();
+  }
+
+  public static void addListener(LogListener listener) {
+      listeners.add(listener);
+  }
+
+  public static void removeListener(LogListener listener) {
+      listeners.remove(listener);
+  }
+
+  private static void notifyListeners(LogEntry entry) {
+      for (LogListener listener : listeners) {
+          listener.onLog(entry);
+      }
   }
 }
