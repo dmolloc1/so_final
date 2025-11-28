@@ -41,11 +41,15 @@ public class MemoryGrid extends GridPane {
         }
     }
 
+    public int getFrameCount() {
+        return frameCount;
+    }
+
     public void updateFrames(List<String> frameContents, int pageInIndex, int pageOutIndex) {
         for (int i = 0; i < frameCount; i++) {
             String content = frameContents.get(i);
             frameLabels[i].setText(content != null ? content : "Libre");
-            frameRects[i].setFill(Color.LIGHTGRAY);
+            frameRects[i].setFill(content != null ? Color.web("#4f46e5") : Color.LIGHTGRAY);
         }
 
         if (pageOutIndex >= 0 && pageOutIndex < frameCount) {
