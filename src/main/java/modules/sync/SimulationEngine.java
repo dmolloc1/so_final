@@ -2,12 +2,15 @@ package modules.sync;
 
 import model.Config;
 import model.Process;
+import model.ResultadoProceso;
+import model.DatosResultados;
 import modules.memory.MemoryManager;
 import modules.scheduler.Scheduler;
 import utils.Logger;
 import model.ProcessState;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SimulationEngine {
   
@@ -18,6 +21,8 @@ public class SimulationEngine {
   private final IOManager ioManager;
   private final List<ProcessThread> processThreads;
   private final Config config;
+
+  private DatosResultados datosFinales;
   
   private int currentTime;
   private boolean running;
@@ -41,7 +46,7 @@ public class SimulationEngine {
     Logger.log("SimulationEngine creado con " + processes.size() + " procesos");
   }
   
-  public void run() {
+  public DatosResultados run() {
     Logger.log("Algoritmo planificación: " + scheduler.getAlgorithmName());
     Logger.log("Algoritmo memoria: " + memoryManager.getAlgorithmName());
     Logger.log("Total procesos: " + allProcesses.size());
@@ -55,6 +60,8 @@ public class SimulationEngine {
     ioManager.stop();
     syncController.stop();
     showResults();
+    datosFinales = construirResultados();
+    return datosFinales;
   }
   
   private void startAllThreads() {
@@ -188,6 +195,40 @@ public class SimulationEngine {
       ));
     }
     Logger.separator();
+  }
+
+  private DatosResultados construirResultados() {
+    Map<String, Integer> reemplazos = memoryManager.getReemplazosPorProceso();
+    List<ResultadoProceso> resumenes = new ArrayList<>();
+
+    for (Process p : allProcesses) {
+      resumenes.add(new ResultadoProceso(
+          p.getPid(),
+          p.getWaitingTime(),
+          p.getTurnaroundTime(),
+          p.getResponseTime(),
+          p.getPageFaults(),
+          reemplazos.getOrDefault(p.getPid(), 0)
+      ));
+    }
+
+    return new DatosResultados(
+        scheduler.getAverageWaitingTime(),
+        scheduler.getAverageTurnaroundTime(),
+        scheduler.getAverageResponseTime(),
+        scheduler.getCPUUtilization(),
+        memoryManager.getPageFaults(),
+        memoryManager.getPageReplacements(),
+        scheduler.getTotalCPUTime(),
+        scheduler.getIdleTime(),
+        memoryManager.getTotalFrames(),
+        memoryManager.getFreeFrames(),
+        resumenes
+    );
+  }
+
+  public DatosResultados getDatosFinales() {
+    return datosFinales;
   }
   
   private void sleep(int ms) {

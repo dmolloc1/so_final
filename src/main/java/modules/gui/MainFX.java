@@ -6,6 +6,7 @@ import java.util.Map;
 import modules.gui.pages.ConfigPage;
 import modules.gui.pages.ResultadosPage;
 import modules.gui.pages.DashboardPage;
+import model.DatosResultados;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -48,7 +49,7 @@ public class MainFX extends Application {
     private void crearPaginas(Stage stage) {
         pages.put("config", new ConfigPage(stage));
         pages.put("dashboard", new DashboardPage());
-        pages.put("resultados", new ResultadosPage());
+        pages.put("resultados", new ResultadosPage(DatosResultados.crearEjemplo()));
     }
 
     private HBox crearNavbar() {

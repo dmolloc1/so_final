@@ -8,12 +8,13 @@ import modules.sync.SimulationEngine;
 import utils.FileParser;
 import utils.Logger;
 import utils.SimulationFactory;
+import model.DatosResultados;
 
 import java.util.List;
 
 public class SimulationRunner {
 
-  public static void runSimulation(String configPath, String processPath) throws Exception {
+  public static DatosResultados runSimulation(String configPath, String processPath) throws Exception {
       
     FileParser.validateFile(configPath);
     FileParser.validateFile(processPath);
@@ -41,8 +42,9 @@ public class SimulationRunner {
     SimulationEngine engine = new SimulationEngine(
       scheduler, memoryManager, processes, config
     );
-    engine.run();
+    DatosResultados datos = engine.run();
     Logger.printSummary();
+    return datos;
   }
     
   private static void printSystemConfiguration(

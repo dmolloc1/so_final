@@ -4,6 +4,7 @@ import modules.memory.MemoryManager;
 import modules.scheduler.FCFS;
 import modules.scheduler.Scheduler;
 import modules.sync.SimulationEngine;
+import model.DatosResultados;
 import utils.FileParser;
 import utils.Logger;
 import modules.memory.*;
@@ -41,8 +42,8 @@ public class Main {
       printConfiguration(config, processes);
       
       SimulationEngine engine = new SimulationEngine( scheduler, memoryManager, processes, config );
-      
-      engine.run();
+
+      DatosResultados datos = engine.run();
       Logger.printSummary();
         
     } catch (Exception e) {

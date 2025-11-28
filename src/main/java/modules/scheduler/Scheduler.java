@@ -149,6 +149,18 @@ public abstract class Scheduler {
     public int getContextSwitches() {
         return contextSwitches;
     }
+
+    public int getTotalCPUTime() {
+        return totalCPUTime;
+    }
+
+    public int getIdleTime() {
+        return idleTime;
+    }
+
+    public int getCompletedProcesses() {
+        return completedProcesses;
+    }
     
     public int getCurrentTime() {
         return currentTime;
