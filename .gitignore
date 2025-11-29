@@ -1,120 +1,60 @@
-*.class
-*.jar
-*.war
-*.ear
-*.nar
+# QT build artifacts
+*.o
+*.obj
+*.so
+*.a
+*.lib
+*.dll
+*.exe
+*.app
+*.dylib
+*.pdb
+*.exp
+*.ilk
 
-bin/
-build/
-target/
-out/
-dist/
 
-logs/*.log
+# Qt build folders
+*build/
+*build-*/
+*build-*/
+release/
+debug/
+Makefile*
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+*.qmake.cache
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+*.cmake
+compile_commands.json
+
+# QtCreator
+*.autosave
+*.creator.*
+*.creator
+*.pro.user*
+*.qmlproject.user*
+*.qbs.user*
+*.qbs.user
+*.directory
+.qmake.stash
+
+# Logs and backups
 *.log
-simulation_*.log
-
-.idea/
-*.iml
-*.iws
-*.ipr
-.idea_modules/
-
-.classpath
-.project
-.settings/
-.metadata/
-
-nbproject/private/
-build/
-nbbuild/
-dist/
-nbdist/
-.nb-gradle/
-
-.vscode/
-*.code-workspace
-
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-._*
-
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.lnk
-
-*~
-.fuse_hidden*
-.directory
-.Trash-*
-
 *.tmp
-*.temp
 *.swp
-*.swo
-*~
-.#*
-
-*.bak
-*.backup
 *~
 
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-
-.gradle/
-gradle-app.setting
-!gradle-wrapper.jar
-.gradletasknamecache
-
-docs/*.pdf
-!docs/informe_ieee.pdf
-!docs/presentacion.pdf
-
-*.zip
-*.rar
-*.7z
-!entrega.zip
-local.properties
-config.local.txt
-!logs/.gitkeep
-!docs/diagramas/.gitkeep
-
-# Archivos de Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-
-# IntelliJ IDEA
-.idea/
-*.iml
-out/
-
-# VS Code
+# VSCode
 .vscode/
 
-# Eclipse
-.project
-.classpath
-.settings/
-
-# Archivos del sistema
+# OS-specific
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
+desktop.ini
