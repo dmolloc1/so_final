@@ -3,13 +3,12 @@ package modules.gui.pages;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -19,7 +18,9 @@ import javafx.scene.layout.VBox;
 import model.DatosResultados;
 import model.ResultadoProceso;
 
-public class ResultadosPage extends VBox {
+public class ResultadosPage extends ScrollPane {
+
+    private final VBox content = new VBox(16);
 
     private final Label algPlanLabel = new Label();
     private final Label algMemLabel = new Label();
@@ -47,12 +48,14 @@ public class ResultadosPage extends VBox {
     }
 
     public ResultadosPage(DatosResultados datos) {
-        setSpacing(18);
-        setPadding(new Insets(24, 28, 24, 28));
-        getStyleClass().add("results-page");
+        content.setSpacing(16);
+        content.setPadding(new Insets(18, 22, 22, 22));
+        content.getStyleClass().add("results-page");
 
-        getChildren().addAll(
-                construirEncabezado(),
+        setFitToWidth(true);
+        setContent(content);
+
+        content.getChildren().addAll(
                 construirDatosGenerales(),
                 construirMetricasScheduler(),
                 construirMetricasMemoria(),
@@ -60,26 +63,6 @@ public class ResultadosPage extends VBox {
                 construirTabla()
         );
         actualizarDatos(datos);
-    }
-
-    private Node construirEncabezado() {
-        BorderPane barra = new BorderPane();
-        barra.setPadding(new Insets(0, 0, 8, 0));
-
-        VBox textos = new VBox(4);
-        Label titulo = new Label("Resultados y Métricas Finales");
-        titulo.getStyleClass().add("section-header");
-        Label subtitulo = new Label("Un resumen detallado de las métricas de la última simulación.");
-        subtitulo.getStyleClass().add("section-description");
-        textos.getChildren().addAll(titulo, subtitulo);
-
-        Button exportar = new Button("Exportar Resultados");
-        exportar.getStyleClass().add("actions-button");
-
-        barra.setLeft(textos);
-        barra.setRight(exportar);
-        setMargin(barra, new Insets(0, 0, 6, 0));
-        return barra;
     }
 
     private Node construirDatosGenerales() {
@@ -182,7 +165,7 @@ public class ResultadosPage extends VBox {
 
         tablaProcesos.getColumns().setAll(pidCol, esperaCol, retornoCol, fallosCol, reemplazosCol);
         tablaProcesos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
-        tablaProcesos.setPrefHeight(260);
+        tablaProcesos.setPrefHeight(240);
         tablaProcesos.getStyleClass().add("result-table");
 
         VBox.setVgrow(tablaProcesos, Priority.ALWAYS);

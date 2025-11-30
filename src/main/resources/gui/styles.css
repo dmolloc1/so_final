@@ -258,8 +258,8 @@
 
 /* ---------------------- RESULTADOS PAGE ---------------------- */
 .results-page {
-  -fx-padding: 24 28;
-  -fx-spacing: 18;
+  -fx-padding: 18 22;
+  -fx-spacing: 14;
   -fx-background-color: rgba(15,23,42,0.65);
   -fx-background-radius: 18;
 }
@@ -290,31 +290,31 @@
   -fx-background-radius: 14;
   -fx-border-radius: 14;
   -fx-border-color: rgba(255,255,255,0.06);
-  -fx-padding: 14;
-  -fx-spacing: 6;
+  -fx-padding: 12;
+  -fx-spacing: 4;
 }
 
 .metric-title {
   -fx-text-fill: #9aa8c7;
-  -fx-font-size: 12px;
+  -fx-font-size: 11px;
   -fx-font-weight: 700;
 }
 
 .metric-value {
   -fx-text-fill: #f8fbff;
-  -fx-font-size: 22px;
-  -fx-font-weight: 900;
+  -fx-font-size: 20px;
+  -fx-font-weight: 800;
 }
 
 .metric-value-large {
   -fx-text-fill: #f8fbff;
-  -fx-font-size: 28px;
-  -fx-font-weight: 900;
+  -fx-font-size: 24px;
+  -fx-font-weight: 800;
 }
 
 .metric-subtext {
   -fx-text-fill: #7d8aad;
-  -fx-font-size: 12px;
+  -fx-font-size: 11px;
 }
 
 .label-light {
