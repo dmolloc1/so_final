@@ -6,6 +6,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -48,11 +49,15 @@ public class ResultadosPage extends ScrollPane {
     }
 
     public ResultadosPage(DatosResultados datos) {
-        content.setSpacing(16);
-        content.setPadding(new Insets(18, 22, 22, 22));
+        content.setSpacing(12);
+        content.setPadding(new Insets(16, 18, 20, 18));
         content.getStyleClass().add("results-page");
 
         setFitToWidth(true);
+        setFitToHeight(false);
+        setPannable(true);
+        setVbarPolicy(ScrollBarPolicy.AS_NEEDED);
+        setHbarPolicy(ScrollBarPolicy.AS_NEEDED);
         setContent(content);
 
         content.getChildren().addAll(
@@ -126,7 +131,7 @@ public class ResultadosPage extends ScrollPane {
         graficaCpu.setMinSize(120, 120);
         graficaCpu.setPrefSize(120, 120);
         graficaCpu.setMaxSize(120, 120);
-        graficaCpu.setStyle("-fx-progress-color: #3b82f6;");
+        graficaCpu.setStyle("-fx-progress-color: #b637fa;");
 
         porcentajeCpuLabel.getStyleClass().add("metric-value-large");
         estadoCpu.getStyleClass().add("metric-subtext");

@@ -333,7 +333,7 @@
 }
 
 .wait-bar-fill {
-  -fx-background-color: linear-gradient(to right, #3b82f6, #1d4ed8);
+  -fx-background-color: linear-gradient(to right, #b637fa, #7c3aed);
   -fx-background-radius: 10;
 }
 
@@ -355,7 +355,7 @@
 }
 
 .result-table .table-row-cell:hover {
-  -fx-background-color: rgba(59,130,246,0.18);
+  -fx-background-color: rgba(182,55,250,0.18);
 }
 
 .result-table .column-header-background {
@@ -370,8 +370,8 @@
 }
 
 .pill {
-  -fx-background-color: rgba(59,130,246,0.16);
-  -fx-text-fill: #c9d7ff;
+  -fx-background-color: rgba(182,55,250,0.16);
+  -fx-text-fill: #f5e9ff;
   -fx-padding: 4 10;
   -fx-background-radius: 12;
   -fx-font-weight: 700;
