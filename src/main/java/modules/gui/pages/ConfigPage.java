@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import modules.gui.pages.ResultadosPage;
 
 public class ConfigPage extends VBox {
 
@@ -28,9 +29,11 @@ public class ConfigPage extends VBox {
     private Config currentConfig;
 
     private DashboardPage dashboardPage;
+    private final ResultadosPage resultadosPage;
 
-    public ConfigPage(Stage stage, DashboardPage dashboardPage) {
+    public ConfigPage(Stage stage, DashboardPage dashboardPage, ResultadosPage resultadosPage) {
         this.dashboardPage = dashboardPage;
+        this.resultadosPage = resultadosPage;
         System.out.println("[ConfigPage] Constructor llamado");
         System.out.println("[ConfigPage] dashboardPage recibido: " + dashboardPage);
         System.out.println("[ConfigPage] proPanel disponible: " + 
@@ -307,10 +310,11 @@ public class ConfigPage extends VBox {
             System.out.println("[ConfigPage] proPanel: " + (dashboardPage != null ? dashboardPage.getProPanel() : "NULL"));
 
             SimulationRunner.runSimulation(
-                currentConfig, 
+                currentConfig,
                 processFile.getAbsolutePath(),
                 dashboardPage != null ? dashboardPage.getProPanel() : null,
-                dashboardPage.getMemPanel()
+                dashboardPage.getMemPanel(),
+                resultadosPage
             );
 
             labelStatus.setText("Simulación iniciada correctamente.");

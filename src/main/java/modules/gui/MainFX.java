@@ -26,6 +26,7 @@ public class MainFX extends Application {
 
     private DashboardPage dashboardPage;
     private ConfigPage configPage;
+    private ResultadosPage resultadosPage;
 
     @Override
     public void start(Stage stage) {
@@ -54,13 +55,14 @@ public class MainFX extends Application {
 
     private void crearPaginas(Stage stage) {
         dashboardPage = new DashboardPage();
-        
-        configPage = new ConfigPage(stage, dashboardPage);
+
+        resultadosPage = new ResultadosPage();
+        configPage = new ConfigPage(stage, dashboardPage, resultadosPage);
         dashboardPage.setConfigPage(configPage);
-        
+
         pages.put("config", configPage);
         pages.put("dashboard", dashboardPage);
-        pages.put("resultados", new ResultadosPage());
+        pages.put("resultados", resultadosPage);
         //deubug
         //System.out.println("[MainFX] DashboardPage creado: " + dashboardPage);
         //System.out.println("[MainFX] ConfigPage creado: " + configPage);
