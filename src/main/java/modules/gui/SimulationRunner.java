@@ -2,7 +2,9 @@ package modules.gui;
 
 import java.util.List;
 
+import javafx.application.Platform;
 import model.Config;
+import model.DatosResultados;
 import model.Process;
 import modules.memory.MemoryManager;
 import modules.scheduler.Scheduler;
@@ -10,13 +12,14 @@ import modules.sync.SimulationEngine;
 import modules.sync.SimulationStateListener;
 import modules.gui.dashboard.MemPanel;
 import modules.gui.dashboard.ProPanel;
+import modules.gui.pages.ResultadosPage;
 import utils.FileParser;
 import utils.Logger;
 import utils.SimulationFactory;
 
 public class SimulationRunner {
 
-    public static void runSimulation(Config config, String processPath, ProPanel proPanel, MemPanel memPanel) throws Exception {
+    public static void runSimulation(Config config, String processPath, ProPanel proPanel, MemPanel memPanel, ResultadosPage resultadosPage) throws Exception {
         
         if (!config.validate()) {
             throw new IllegalArgumentException("Configuracion invalida");
@@ -76,6 +79,10 @@ public class SimulationRunner {
         Thread simulationThread = new Thread(() -> {
             try {
                 engine.run();
+                DatosResultados resultados = engine.getDatosFinales();
+                if (resultadosPage != null && resultados != null) {
+                    Platform.runLater(() -> resultadosPage.actualizarDatos(resultados));
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

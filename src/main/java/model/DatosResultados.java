@@ -16,6 +16,9 @@ public class DatosResultados {
     private final int marcosLibres;
     private final int tiempoCpu;
     private final int tiempoOcioso;
+    private final int procesosCompletados;
+    private final int cambiosContexto;
+    private final int cargasTotales;
     private final List<ResultadoProceso> resumenProcesos;
     private final String algPlanificacion;
     private final String algMemoria;
@@ -31,6 +34,9 @@ public class DatosResultados {
             int tiempoOcioso,
             int marcosTotales,
             int marcosLibres,
+            int procesosCompletados,
+            int cambiosContexto,
+            int cargasTotales,
             List<ResultadoProceso> resumenProcesos,
             String algP,
             String algM,
@@ -47,6 +53,9 @@ public class DatosResultados {
         this.tiempoOcioso = tiempoOcioso;
         this.marcosTotales = marcosTotales;
         this.marcosLibres = marcosLibres;
+        this.procesosCompletados = procesosCompletados;
+        this.cambiosContexto = cambiosContexto;
+        this.cargasTotales = cargasTotales;
         this.resumenProcesos = new ArrayList<>(resumenProcesos);
         this.algMemoria = algM;
         this.algPlanificacion = algP;
@@ -97,8 +106,32 @@ public class DatosResultados {
         return tiempoOcioso;
     }
 
+    public int getProcesosCompletados() {
+        return procesosCompletados;
+    }
+
+    public int getCambiosContexto() {
+        return cambiosContexto;
+    }
+
+    public int getCargasTotales() {
+        return cargasTotales;
+    }
+
     public List<ResultadoProceso> getResumenProcesos() {
         return Collections.unmodifiableList(resumenProcesos);
+    }
+
+    public String getAlgPlanificacion() {
+        return algPlanificacion;
+    }
+
+    public String getAlgMemoria() {
+        return algMemoria;
+    }
+
+    public int getTotalProcesos() {
+        return totalProcesos;
     }
 
     public static DatosResultados prueba() {
@@ -117,10 +150,13 @@ public class DatosResultados {
                 87.0,
                 1452,
                 312,
-                320,
-                48,
-                128,
+                1250,
+                182,
+                64,
                 12,
+                5,
+                47,
+                2105,
                 procesos,
                 "Algorimo SJF",
                 "Algorítmo FIFO",

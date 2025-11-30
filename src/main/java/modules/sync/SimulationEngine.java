@@ -74,7 +74,8 @@ public class SimulationEngine {
     ioManager.stop();
     syncController.stop();
     showResults();
-  }/* 
+    datosFinales = construirResultados();
+  }/*
 
   public DatosResultados run() {
     
@@ -397,4 +398,41 @@ public class SimulationEngine {
   public synchronized int getCurrentTime() { return currentTime; }
   public synchronized boolean isRunning() { return running; }
   public SyncController getSyncController() { return syncController; }
+
+  public DatosResultados getDatosFinales() { return datosFinales; }
+
+  private DatosResultados construirResultados() {
+    List<ResultadoProceso> resumen = new ArrayList<>();
+
+    for (Process p : allProcesses) {
+      resumen.add(new ResultadoProceso(
+          p.getPid(),
+          Math.max(0, p.getWaitingTime()),
+          Math.max(0, p.getTurnaroundTime()),
+          Math.max(0, p.getResponseTime()),
+          p.getPageFaults(),
+          0
+      ));
+    }
+
+    return new DatosResultados(
+        scheduler.getAverageWaitingTime(),
+        scheduler.getAverageTurnaroundTime(),
+        scheduler.getAverageResponseTime(),
+        scheduler.getCPUUtilization(),
+        memoryManager.getPageFaults(),
+        memoryManager.getPageReplacements(),
+        scheduler.getTotalCPUTime(),
+        scheduler.getIdleTime(),
+        memoryManager.getTotalFrames(),
+        memoryManager.getFreeFrames(),
+        scheduler.getCompletedProcesses(),
+        scheduler.getContextSwitches(),
+        memoryManager.getTotalPageLoads(),
+        resumen,
+        scheduler.getAlgorithmName(),
+        memoryManager.getAlgorithmName(),
+        allProcesses.size()
+    );
+  }
 }
