@@ -59,38 +59,24 @@ public class SimulationEngine {
     this.stateListener = listener;
   }
 
-  public void run() {
-    running = true;
-
-    syncController.start();
-    ioManager.start();
-
-    startAllThreads();
-
-    coordinationLoop();
-
-    waitForAllThreads();
-
-    ioManager.stop();
-    syncController.stop();
-    showResults();
-  }/* 
-
   public DatosResultados run() {
-    
     running = true;
+
     syncController.start();
     ioManager.start();
+
     startAllThreads();
+
     coordinationLoop();
+
     waitForAllThreads();
+
     ioManager.stop();
     syncController.stop();
     showResults();
     datosFinales = construirResultados();
     return datosFinales;
   }
-*/
 
   private void startAllThreads() {
     for (ProcessThread thread : processThreads) {
@@ -371,6 +357,44 @@ public class SimulationEngine {
         p.getPageFaults()
       ));
     }
+  }
+
+  private DatosResultados construirResultados() {
+    List<ResultadoProceso> resumen = new ArrayList<>();
+    for (Process proceso : allProcesses) {
+      resumen.add(new ResultadoProceso(
+        proceso.getPid(),
+        proceso.getWaitingTime(),
+        proceso.getTurnaroundTime(),
+        proceso.getResponseTime(),
+        proceso.getPageFaults(),
+        0 // Actualmente no se rastrean reemplazos por proceso
+      ));
+    }
+
+    return new DatosResultados(
+      scheduler.getAverageWaitingTime(),
+      scheduler.getAverageTurnaroundTime(),
+      scheduler.getAverageResponseTime(),
+      scheduler.getCPUUtilization(),
+      scheduler.getCompletedProcesses(),
+      allProcesses.size(),
+      scheduler.getContextSwitches(),
+      scheduler.getTotalCPUTime(),
+      scheduler.getIdleTime(),
+      memoryManager.getTotalPageLoads(),
+      memoryManager.getPageFaults(),
+      memoryManager.getPageReplacements(),
+      memoryManager.getTotalFrames(),
+      memoryManager.getFreeFrames(),
+      resumen,
+      scheduler.getAlgorithmName(),
+      memoryManager.getAlgorithmName()
+    );
+  }
+
+  public DatosResultados getDatosFinales() {
+    return datosFinales;
   }
 
 

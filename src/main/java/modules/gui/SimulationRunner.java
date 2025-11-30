@@ -16,7 +16,7 @@ import utils.SimulationFactory;
 
 public class SimulationRunner {
 
-    public static void runSimulation(Config config, String processPath, ProPanel proPanel, MemPanel memPanel) throws Exception {
+    public static SimulationEngine runSimulation(Config config, String processPath, ProPanel proPanel, MemPanel memPanel) throws Exception {
         
         if (!config.validate()) {
             throw new IllegalArgumentException("Configuracion invalida");
@@ -83,7 +83,8 @@ public class SimulationRunner {
         
         simulationThread.setDaemon(false); // No es daemon para que complete antes de cerrar
         simulationThread.start();
-        
+
+        return engine;
     }
     
     private static void printSystemConfiguration(Config config, List<Process> processes, Scheduler scheduler, MemoryManager memoryManager) {
