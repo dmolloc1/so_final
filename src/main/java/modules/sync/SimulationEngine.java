@@ -31,6 +31,7 @@ public class SimulationEngine {
   private final Object engineMonitor = new Object();
   
   private int currentTime;
+  private int cContexto;
   private volatile boolean running;
   
   private SimulationStateListener stateListener;
@@ -325,6 +326,7 @@ public class SimulationEngine {
       Logger.syncLog("[ENGINE] " + current.getPid() + " perdió páginas");
       current.setState(ProcessState.READY);
       scheduler.addProcess(current);
+      int cContexto = scheduler.getCambiosContexto();
       scheduler.setCurrentProcess(null);
       selectNextProcess();
       return;
