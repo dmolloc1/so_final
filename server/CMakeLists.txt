@@ -30,6 +30,9 @@ add_executable(ServidorAltokepe
   ManejadorCliente.cpp
   LogicaNegocio.cpp
   LogicaNegocioHandlers.cpp
+  repository/MenuRepository.cpp
+  repository/PedidoRepository.cpp
+  repository/RankingRepository.cpp
   patterns/ServerCommands.cpp
   patterns/CommandFactory.cpp
   identifier/IdentificadorCliente.cpp

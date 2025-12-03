@@ -1,0 +1,7 @@
+Reactor pattern
+- IMPLEMENTADO: Sí. main.cpp arranca QCoreApplication y el bucle de eventos de Qt actúa como demultiplexor; Servidor (QTcpServer) acepta conexiones en incomingConnection y crea ManejadorCliente en un QThread; cada manejador se suscribe a readyRead/disconnected del socket en procesar(); y LogicaNegocio emite enviarRespuesta con conexión encolada hacia el manejador. Este flujo basado en señales/slots y callbacks confirma que el Reactor ya está implementado.
+- Grado de utilidad: Alto. El modelo reactivo existente ya evita bloqueos y permite escalar añadiendo nuevos eventos o manejadores especializados sin cambiar el bucle principal.
+
+Repository pattern
+- IMPLEMENTADO: Sí. LogicaNegocio ahora delega el acceso a datos en MenuRepository (carga y consultas del menú), PedidoRepository (búsqueda, almacenamiento y cola para manager/chef) y RankingRepository (conteo de platos vendidos y devueltos). Esta capa encapsula las colecciones internas y separa la lógica de dominio de los detalles de almacenamiento.
+- Grado de utilidad: Medio-Alto. La abstracción facilita persistir en disco o base de datos en el futuro, habilita dobles de prueba para aislar la lógica y hace más sencillo evolucionar las consultas sin afectar el resto del flujo.
