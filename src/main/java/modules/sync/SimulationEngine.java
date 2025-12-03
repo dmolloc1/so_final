@@ -29,9 +29,10 @@ public class SimulationEngine {
   private DatosResultados datosFinales;
 
   private final Object engineMonitor = new Object();
-  
+
   private int currentTime;
   private int cContexto;
+  private int contextSwitchEvents;
   private volatile boolean running;
   
   private SimulationStateListener stateListener;
@@ -48,6 +49,7 @@ public class SimulationEngine {
     this.allProcesses = processes;
     this.config = config;
     this.currentTime = 0;
+    this.contextSwitchEvents = 0;
     this.running = false;
     
     // Crear un thread independiente por cada proceso
@@ -144,7 +146,7 @@ public class SimulationEngine {
             usoCpu,
             completados,
             allProcesses.size(),
-            scheduler.getCambiosContexto(),
+            contextSwitchEvents,
             scheduler.getTiempoCpuTotal(),
             scheduler.getTiempoOcioso(),
             memoryManager.getTotalPageLoads(),
@@ -398,11 +400,17 @@ public class SimulationEngine {
       //para gant
       String pid = nextProcess.getPid();
       System.out.println("[Engine-Gant] Proceso " + pid + " inicia ejecución en t=" + currentTime);
-      
+
+      boolean huboContextSwitch = currentProcess != null;
+
+      if (huboContextSwitch) {
+          contextSwitchEvents++;
+      }
+
       if (stateListener != null) {
           stateListener.onProcessExecutionStarted(pid, currentTime);
           // Solo notificar context switch si hubo un proceso anterior
-          if (currentProcess != null) {
+          if (huboContextSwitch) {
               stateListener.onContextSwitch();
           }
       }
