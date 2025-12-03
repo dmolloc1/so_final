@@ -1,0 +1,162 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+package model {
+  class Config {
+    +totalFrames : int
+    +frameSize : int
+    +schedulerType : SchedulerType
+    +quantum : int
+    +replacementType : ReplacementType
+    +timeUnit : int
+  }
+
+  class Process {
+    +pid : String
+    +arrivalTime : int
+    +priority : int
+    +state : ProcessState
+    +requiredPages : int
+  }
+
+  class Burst {
+    +type : BurstType
+    +duration : int
+    +remainingTime : int
+  }
+
+  enum ProcessState
+  class DatosResultados
+  class ResultadoProceso
+}
+
+package utils {
+  class FileParser
+  class SimulationFactory
+  class Logger {
+    class LogEntry
+  }
+}
+
+package modules.scheduler {
+  abstract class Scheduler
+  class FCFS
+  class SJF
+  class SRT
+  class RoundRobin
+  class Priority
+
+  Scheduler <|-- FCFS
+  Scheduler <|-- SJF
+  Scheduler <|-- SRT
+  Scheduler <|-- RoundRobin
+  Scheduler <|-- Priority
+}
+
+package modules.memory {
+  interface MemoryEventListener
+  abstract class MemoryManager {
+    class Frame
+  }
+  class FIFO
+  class LRU
+  class Optimal
+  class NRU
+
+  MemoryManager <|-- FIFO
+  MemoryManager <|-- LRU
+  MemoryManager <|-- Optimal
+  MemoryManager <|-- NRU
+}
+
+package modules.sync {
+  class SimulationEngine
+  class SyncController
+  class ProcessThread
+  class IOManager
+  interface SimulationStateListener
+}
+
+package modules.gui {
+  class MainFX
+  class SimulationRunner
+
+  package pages {
+    class ConfigPage
+    class DashboardPage
+    class ResultadosPage
+  }
+
+  package dashboard {
+    class ProPanel
+    class ExePanel
+    class MemPanel
+    class LogsPanel
+  }
+
+  package components {
+    class MainWindow
+    class SimulationControls
+    class MemoryVisualizer
+    class MemoryTable
+    class GanttChart
+  }
+}
+
+FileParser --> Process : "crea procesos"
+SimulationFactory --> Scheduler : "createScheduler()"
+SimulationFactory --> MemoryManager : "createMemoryManager()"
+SimulationRunner --> FileParser : "parseProcesses()"
+SimulationRunner --> SimulationFactory
+SimulationRunner --> SimulationEngine : "runSimulation()"
+SimulationRunner --> DashboardPage
+SimulationRunner --> MemPanel
+
+SimulationEngine --> Scheduler
+SimulationEngine --> MemoryManager
+SimulationEngine --> SyncController
+SimulationEngine --> IOManager
+SimulationEngine --> SimulationStateListener
+SimulationEngine --> ProcessThread
+SimulationEngine --> Process
+
+SyncController --> Scheduler : "coordina ready/ejecución"
+SyncController --> MemoryManager : "gestiona memoria"
+SyncController --> IOManager : "cola I/O"
+IOManager --> Process : "bloqueo/IO"
+ProcessThread --> Process
+
+MemoryManager --> MemoryEventListener : "notifica" 
+MemoryVisualizer ..|> MemoryEventListener
+MemoryVisualizer --> MemoryTable
+MemoryVisualizer --> MemoryManager : "renderiza"
+MemPanel --> MemoryVisualizer
+MemPanel --> MemoryManager
+
+MainFX --> MainWindow
+MainFX --> SimulationRunner
+MainFX --> ConfigPage
+MainFX --> DashboardPage
+MainFX --> ResultadosPage
+
+ProPanel --> Process
+ExePanel --> Process
+LogsPanel --> Logger.LogEntry
+DashboardPage --> ProPanel
+DashboardPage --> ExePanel
+DashboardPage --> LogsPanel
+DashboardPage --> MemPanel
+ResultadosPage --> DatosResultados
+ResultadosPage --> ResultadoProceso
+
+Process --> Burst
+Process --> ProcessState
+Scheduler --> Process : "readyQueue"
+MemoryManager --> Process : "frames por PID"
+Config --> SchedulerType
+Config --> ReplacementType
+SimulationEngine --> Config
+
+@enduml
