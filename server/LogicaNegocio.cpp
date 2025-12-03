@@ -4,8 +4,6 @@
 #include "common/network/Protocolo.h"
 #include "common/models/Estados.h"
 #include "common/adapter/AdaptadorSerializadorJSON.h"
-#include <QFile>
-#include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDebug>
@@ -13,10 +11,11 @@
 
 LogicaNegocio* LogicaNegocio::s_instance = nullptr;
 
-LogicaNegocio::LogicaNegocio(QObject* parent) 
-  : QObject(parent), 
-    m_siguienteIdPedido(1), 
-    m_siguienteIdInstanciaPlato(1) 
+LogicaNegocio::LogicaNegocio(QObject* parent)
+  : QObject(parent),
+    m_siguienteIdPedido(1),
+    m_siguienteIdInstanciaPlato(1),
+    m_menuRepository(m_serializador)
 {
   cargarMenuDesdeArchivo(":/menu.json");
 }
@@ -29,11 +28,7 @@ LogicaNegocio* LogicaNegocio::instance() {
 }
 
 PedidoMesa* LogicaNegocio::obtenerPedido(long long idPedido) {
-  auto it = m_pedidosActivos.find(idPedido);
-  if (it == m_pedidosActivos.end()) {
-    return nullptr;
-  }
-  return &it->second;
+  return m_pedidoRepository.obtener(idPedido);
 }
 
 PlatoInstancia* LogicaNegocio::obtenerInstancia(PedidoMesa& pedido, long long idInstancia) {
@@ -45,36 +40,17 @@ PlatoInstancia* LogicaNegocio::obtenerInstancia(PedidoMesa& pedido, long long id
   return nullptr;
 }
 
-PlatoDefinicion* LogicaNegocio::obtenerDefinicionPlato(int idPlato) {
-  auto it = m_menu.find(idPlato);
-  if (it == m_menu.end()) {
-    return nullptr;
-  }
-  return &it->second;
+const PlatoDefinicion* LogicaNegocio::obtenerDefinicionPlato(int idPlato) {
+  return m_menuRepository.obtener(idPlato);
 }
 
 void LogicaNegocio::cargarMenuDesdeArchivo(const QString& rutaArchivo) {
   std::lock_guard<std::mutex> lock(m_mutex);
-  QFile archivo(rutaArchivo);
-  if (!archivo.open(QIODevice::ReadOnly)) {
-    qCritical() << "No se pudo abrir el archivo de menú:" << rutaArchivo;
+  if (!m_menuRepository.cargarDesdeArchivo(rutaArchivo)) {
     return;
   }
 
-  QByteArray data = archivo.readAll();
-  QJsonDocument doc = QJsonDocument::fromJson(data);
-  if (!doc.isArray()) {
-    qCritical() << "El archivo de menú no es un array JSON válido.";
-    return;
-  }
-
-  m_menu.clear();
-  QJsonArray menuArray = doc.array();
-  for (const QJsonValue& val : menuArray) {
-    PlatoDefinicion plato = m_serializador.jsonToPlatoDefinicion(val.toObject());
-    m_menu[plato.id] = plato;
-  }
-  qInfo() << "Menú cargado desde" << rutaArchivo << "con" << m_menu.size() << "platos.";
+  qInfo() << "Menú cargado desde" << rutaArchivo << "con" << m_menuRepository.cantidad() << "platos.";
 }
 
 void LogicaNegocio::registrarManejador(ManejadorCliente* manejador) {
@@ -105,8 +81,7 @@ void LogicaNegocio::enviarEstadoInicial(ManejadorCliente* cliente) {
     QJsonObject mensaje;
     QJsonArray menuArray;
 
-    for (const auto& par : m_menu) {
-      const PlatoDefinicion& plato = par.second;
+    for (const auto& plato : m_menuRepository.listar()) {
       menuArray.append(SerializadorJSON::platoDefinicionToJson(plato));
     }
 
@@ -126,9 +101,10 @@ QJsonObject LogicaNegocio::getEstadoParaRanking() {
   };
   std::vector<ItemRanking> lista;
 
-  for (auto const& [id, cantidad] : m_conteoPlatosRanking) {
-    if (m_menu.find(id) != m_menu.end()) {
-      lista.push_back({QString::fromStdString(m_menu[id].nombre), cantidad});
+  for (auto const& [id, cantidad] : m_rankingRepository.conteo()) {
+    const PlatoDefinicion* plato = m_menuRepository.obtener(id);
+    if (plato) {
+      lista.push_back({QString::fromStdString(plato->nombre), cantidad});
     }
   }
 
@@ -157,7 +133,7 @@ void LogicaNegocio::registrarVenta(int idPlato) {
   QJsonObject rankingMsg;
   {
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_conteoPlatosRanking[idPlato]++;
+    m_rankingRepository.incrementar(idPlato);
     rankingMsg = getEstadoParaRanking(); // Generar bajo lock
   }
 
@@ -191,28 +167,27 @@ void LogicaNegocio::procesarNuevoPedido(const QJsonObject& mensaje, ManejadorCli
   for (auto plato : platos) {
     int idPlato = plato.toInt();
 
-    if (m_menu.find(idPlato) == m_menu.end()) {
+    const PlatoDefinicion* platoDef = m_menuRepository.obtener(idPlato);
+    if (!platoDef) {
       qWarning() << "Plato inválido:" << idPlato;
       continue;
     }
 
-    const PlatoDefinicion& platoDef = m_menu[idPlato];
-
     PlatoInstancia platoInst;
     platoInst.id_instancia = m_siguienteIdInstanciaPlato++;
-    platoInst.id_plato_definicion = platoDef.id;
+    platoInst.id_plato_definicion = platoDef->id;
     platoInst.estado = EstadoPlato::EN_ESPERA;
 
     pedido.platos.push_back(platoInst);
 
     // Encolar tarea para cocina
-    InfoPlatoPrioridad platoPrior(platoInst.id_instancia, platoDef.tiempo_preparacion_estimado);
+    InfoPlatoPrioridad platoPrior(platoInst.id_instancia, platoDef->tiempo_preparacion_estimado);
     platoPrior.id_pedido = idPedido;
-    m_colasPorEstacion[platoDef.estacion].push(platoPrior);
+    m_colasPorEstacion[platoDef->estacion].push(platoPrior);
   }
 
-  m_pedidosActivos[idPedido] = pedido;
-  m_colaManagerChef.push(idPedido);
+  m_pedidoRepository.guardar(idPedido, pedido);
+  m_pedidoRepository.colaManagerChef().push(idPedido);
 
   QJsonObject msg;
   msg[Protocolo::EVENTO] = Protocolo::PEDIDO_REGISTRADO;
@@ -366,10 +341,10 @@ void LogicaNegocio::procesarConfirmarEntrega(const QJsonObject& mensaje, Manejad
 
   // Actualizar ranking
   for (const auto& inst : pedido.platos) {
-    m_conteoPlatosRanking[inst.id_plato_definicion]++;
+    m_rankingRepository.incrementar(inst.id_plato_definicion);
   }
 
-  qInfo() << "Pedido" << idPedido << "ENTREGADO correctamente.";
+  qInfo() << "Pedido" << pedido.id_pedido << "ENTREGADO correctamente.";
 }
 
 void LogicaNegocio::procesarDevolverPlato(const QJsonObject& mensaje, ManejadorCliente* remitente) {
@@ -405,15 +380,19 @@ void LogicaNegocio::procesarDevolverPlato(const QJsonObject& mensaje, ManejadorC
 
   pedido.estado_general = EstadoPedido::EN_PROGRESO;
 
-  const PlatoDefinicion& def = m_menu[pedido.platos[0].id_plato_definicion];
+  const PlatoDefinicion* def = m_menuRepository.obtener(pedido.platos[0].id_plato_definicion);
+  if (!def) {
+    qWarning() << "Definición de plato no encontrada para pedido" << pedido.id_pedido;
+    return;
+  }
 
-  InfoPlatoPrioridad pr(instancia.id_instancia, def.tiempo_preparacion_estimado);
+  InfoPlatoPrioridad pr(instancia.id_instancia, def->tiempo_preparacion_estimado);
   pr.id_pedido = pedido.id_pedido;
   m_colasPorEstacion[estacionObjetivo].push(pr);
 
   for (const auto& inst : pedido.platos) {
     if (inst.id_instancia == instancia.id_instancia) {
-      m_conteoPlatosRanking[inst.id_plato_definicion]--;
+      m_rankingRepository.decrementar(inst.id_plato_definicion);
       break;
     }
   }

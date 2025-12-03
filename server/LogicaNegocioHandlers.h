@@ -18,7 +18,7 @@ struct OperacionContext {
   ManejadorCliente* remitente = nullptr;
   PedidoMesa* pedido = nullptr;
   PlatoInstancia* instancia = nullptr;
-  PlatoDefinicion* definicion = nullptr;
+  const PlatoDefinicion* definicion = nullptr;
 };
 
 class OperacionHandler {
