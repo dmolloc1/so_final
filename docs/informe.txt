@@ -1,0 +1,70 @@
+Informe general del simulador de sistema operativo
+=================================================
+
+Resumen del propósito del proyecto
+----------------------------------
+El repositorio implementa un simulador de conceptos de sistemas operativos en Java (JavaFX). Incluye modelos de procesos y ráfagas, algoritmos de planificación de CPU, gestores de memoria virtual con reemplazo de páginas, coordinación de hilos que representan procesos, y una interfaz gráfica para visualizar la ejecución y métricas finales. El flujo típico consiste en leer configuraciones y procesos de archivos, inicializar los módulos de planificación y memoria según la configuración, lanzar hilos por proceso y coordinar su ejecución paso a paso o en modo continuo mientras se registran estadísticas.
+
+Modelo de procesos y configuración
+----------------------------------
+- **Process** encapsula la identidad del proceso (PID, tiempo de llegada y prioridad), sus ráfagas CPU/IO, estado de ejecución y métricas (espera, retorno, respuesta). También administra el estado de memoria por proceso: páginas requeridas, páginas cargadas y fallos de página. Proporciona operaciones para avanzar ráfagas, calcular tiempos y marcar eventos como cambios de contexto o finalización de fallos de página.【F:src/main/java/model/Process.java†L7-L200】
+- **Burst** representa cada ráfaga de CPU o E/S con su duración y tiempo restante, permitiendo descontar tiempo ejecutado y reiniciar el contador según sea necesario.【F:src/main/java/model/Burst.java†L4-L78】
+- **ProcessState** define los estados posibles (NEW, READY, RUNNING, bloqueos por memoria o I/O, cambio de contexto y TERMINATED) junto con utilidades para verificar disponibilidad, actividad o bloqueo.【F:src/main/java/model/ProcessState.java†L5-L35】
+- **Config** centraliza parámetros globales: tipo de planificador, algoritmo de reemplazo de páginas, número y tamaño de marcos, quantum de Round Robin y sobrecostos (llamadas al sistema, fallos de página, cambios de contexto). Valida valores y ofrece representaciones legibles.【F:src/main/java/model/Config.java†L5-L141】
+- **DatosResultados** y **ResultadoProceso** guardan métricas agregadas y por proceso (tiempos promedio, utilización de CPU, fallos y reemplazos de páginas, cambios de contexto y resúmenes por PID) para mostrarlas al finalizar la simulación.【F:src/main/java/model/DatosResultados.java†L7-L115】【F:src/main/java/model/ResultadoProceso.java†L1-L45】
+
+Planificación de CPU
+--------------------
+La clase abstracta **Scheduler** mantiene la cola READY, el proceso en ejecución y métricas acumuladas. Expone métodos sincronizados para añadir procesos, confirmar selecciones (con conteo de cambios de contexto), actualizar tiempo y registrar CPU ociosidad. Cada algoritmo implementa la selección del siguiente proceso y decide si interrumpe al actual (shouldPreempt).【F:src/main/java/modules/scheduler/Scheduler.java†L13-L200】
+
+Implementaciones incluidas:
+- **FCFS**: mantiene el proceso en ejecución hasta que finaliza su ráfaga y nunca expropia; al concluir toma el siguiente en la cola.【F:src/main/java/modules/scheduler/FCFS.java†L5-L43】
+- **SJF**: escoge el proceso con la ráfaga CPU más corta disponible, no es apropiativo.【F:src/main/java/modules/scheduler/SJF.java†L6-L46】
+- **SRT**: versión apropiativa de SJF; reevalúa continuamente y expropia si llega un proceso con menor tiempo restante de CPU.【F:src/main/java/modules/scheduler/SRT.java†L5-L58】
+- **RoundRobin**: asigna un quantum fijo. Reinicia el quantum al confirmar la selección, lo decrementa por unidad de tiempo y expropia cuando se agota.【F:src/main/java/modules/scheduler/RoundRobin.java†L5-L95】
+- **Priority** y **PriorityPreemptive**: priorizan números más bajos; la versión apropiativa interrumpe si aparece una prioridad superior. El modo no apropiativo reutiliza la misma lógica de selección pero mantiene al proceso actual.【F:src/main/java/modules/scheduler/Priority.java†L5-L75】【F:src/main/java/modules/scheduler/PriorityPreemptive.java†L5-L62】
+
+Gestión de memoria virtual
+--------------------------
+**MemoryManager** define marcos físicos, estadísticas y eventos de memoria. Gestiona carga y reemplazo de páginas con notificaciones a listeners (para visualización) y penaliza fallos de página. Si la página ya está cargada registra un hit; de lo contrario incrementa fallos, intenta usar marcos libres y, si no hay, selecciona una víctima según el algoritmo concreto. También libera páginas al terminar procesos y ofrece instantáneas compactas de la memoria.【F:src/main/java/modules/memory/MemoryManager.java†L10-L200】【F:src/main/java/modules/memory/MemoryManager.java†L200-L356】
+
+Algoritmos derivados:
+- **FIFO**: mantiene una cola de marcos; reemplaza siempre el marco cargado más antiguo y reencola el marco usado tras cada carga o reemplazo.【F:src/main/java/modules/memory/FIFO.java†L5-L54】
+- **LRU**: elige como víctima el marco con el `lastAccessTime` más antiguo (menos recientemente usado).【F:src/main/java/modules/memory/LRU.java†L1-L28】
+- **Optimal**: utiliza trazas de accesos futuros por PID para escoger el marco cuya página tardará más en volver a usarse; actualiza un índice de acceso por proceso para avanzar la predicción.【F:src/main/java/modules/memory/Optimal.java†L5-L57】
+- **NRU**: clasifica marcos según bits R/M y selecciona aleatoriamente dentro de la clase de menor prioridad disponible, favoreciendo páginas no referenciadas ni modificadas.【F:src/main/java/modules/memory/NRU.java†L5-L52】
+
+Sincronización y ejecución de procesos
+--------------------------------------
+- **SimulationController** permite ejecutar la simulación en modo paso a paso con locks y condiciones, deteniendo la ejecución hasta que el usuario avanza o desactiva el modo escalonado. También limpia resaltados de paneles UI al avanzar.【F:src/main/java/modules/sync/SimulationController.java†L1-L68】
+- **SyncController** coordina planificador y memoria: verifica penalizaciones por fallos de página, carga páginas requeridas, bloquea procesos por memoria insuficiente y libera recursos al terminar. Sincroniza tiempos entre scheduler y gestor de memoria y notifica transiciones de estado (READY, BLOCKED_MEMORY, TERMINATED).【F:src/main/java/modules/sync/SyncController.java†L1-L116】【F:src/main/java/modules/sync/SyncController.java†L200-L241】
+- **SimulationEngine** arma el entorno de simulación: crea el SyncController y un IOManager (manejo no detallado de ráfagas de E/S), inicializa un hilo ProcessThread por proceso y coordina su ejecución. El bucle de coordinación notifica llegadas, maneja finalización de cambios de contexto, sincroniza tiempo, consulta al scheduler y actualiza la interfaz mediante SimulationStateListener. Al finalizar construye un objeto DatosResultados con métricas de procesos, CPU y memoria.【F:src/main/java/modules/sync/SimulationEngine.java†L1-L112】【F:src/main/java/modules/sync/SimulationEngine.java†L112-L210】
+
+Utilidades y entrada de datos
+-----------------------------
+- **FileParser** lee configuraciones y listas de procesos desde archivos de texto. Analiza ráfagas CPU/IO con expresiones regulares y valida el formato esperado (PID, llegada, ráfagas, prioridad, páginas). Ofrece parsers para tipos de planificador y reemplazo basados en cadenas.【F:src/main/java/utils/FileParser.java†L1-L107】
+- **SimulationFactory** (no mostrado en detalle) se usa para construir componentes según la configuración y los datos de entrada.
+- **Logger** centraliza salidas de depuración y logs categorizados (ejecución, memoria, sincronización). Se emplea en todos los módulos para rastrear eventos clave.
+
+Interfaz gráfica (JavaFX)
+-------------------------
+- **MainFX** inicia la aplicación JavaFX, carga estilos y crea páginas principales: configuración, dashboard de simulación y resultados. Implementa una barra de navegación y conmutación entre páginas, envolviendo Config y Resultados en un ScrollPane y mostrando el dashboard en modo sin desplazamiento. Permite reemplazar la página de resultados cuando termina la simulación.【F:src/main/java/modules/gui/MainFX.java†L18-L119】【F:src/main/java/modules/gui/MainFX.java†L119-L189】
+- Las páginas DashboardPage, ConfigPage y ResultadosPage (más componentes como GanttChartSimple, MemoryVisualizer y paneles de CPU/memoria/logs) presentan los datos de planificación, memoria y resultados, reaccionando a los eventos enviados por SimulationEngine y los listeners de memoria.
+
+Flujo de simulación resumido
+----------------------------
+1. Se leen configuración y procesos desde archivos de recursos mediante FileParser.
+2. SimulationFactory crea el Scheduler y MemoryManager acordes al Config y prepara SimulationEngine con los procesos.
+3. SimulationEngine registra listeners de estado/UI y arranca IOManager y los ProcessThread que representan cada proceso.
+4. El bucle de coordinación consulta el scheduler, verifica disponibilidad de páginas con SyncController y avanza el tiempo, aplicando penalizaciones por fallos de página o cambios de contexto según la configuración.
+5. MemoryManager carga o reemplaza páginas usando el algoritmo elegido, notificando eventos a visualizadores.
+6. Al completarse los procesos, SimulationEngine calcula métricas (uso de CPU, fallos de página, tiempos promedio, cambios de contexto) y las muestra en la interfaz de resultados.
+
+Archivos de datos de ejemplo
+----------------------------
+La carpeta `src/main/resources/data` contiene casos de prueba (`caso1_cargaLigera.txt`, `caso2_altaDemanda.txt`, etc.) y un archivo `procesos.txt` con el formato esperado de definición de procesos, útil para alimentar la simulación.
+
+Notas de uso
+------------
+- El proyecto se compila y ejecuta con Maven y JDK 17 (`mvn javafx:run`).
+- El modo paso a paso puede activarse desde la interfaz, permitiendo visualizar cada fallo de página, cambio de contexto y avance de ráfagas antes de continuar.
