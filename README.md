@@ -50,99 +50,71 @@ Operating-System-Simulator/
 │
 ├── src/
 │   └── main/
-│        ├── java/
-│        │   ├── Main.java
-│        │   │
-│        │   ├── modules/
-│        │   │   ├── scheduler/
-│        │   │   │   ├── Scheduler.java
-│        │   │   │   ├── FCFS.java
-│        │   │   │   ├── SJF.java
-│        │   │   │   └── RoundRobin.java
-│        │   │   │
-│        │   │   ├── memory/
-│        │   │   │   ├── MemoryManager.java
-│        │   │   │   ├── FIFO.java
-│        │   │   │   ├── LRU.java
-│        │   │   │   └── Optimal.java
-│        │   │   │
-│        │   │   ├── sync/
-│        │   │   │   ├── ProcessThread.java
-│        │   │   │   ├── SyncController.java
-│        │   │   │   └── IOManager.java
-│        │   │   │
-│        │   │   └── gui/
-│        │   │       ├── MainFX.java
-│        │   │       ├── SimulationRunner.java
-│        │   │       |
-│        │   │       ├── navigation/
-│        │   │       │   └── NavBarController.java
-│        │   │       |
-│        │   │       ├── pages/
-│        │   │       │   ├── ConfigPageController.java
-│        │   │       │   ├── DashboardPageController.java
-│        │   │       │   ├── ResultsPageController.java
-│        │   │       │   └── SettingsPageController.java
-│        │   │       |
-│        │   │       ├── dashboard/
-│        │   │       │   ├── CPUViewController.java
-│        │   │       │   ├── MemoryViewController.java
-│        │   │       │   └── SyncViewController.java
-│        │   │       |
-│        │   │       └── components/
-│        │   │           ├── GanttView.java
-│        │   │           ├── FrameTableView.java
-│        │   │           ├── ProcessListView.java
-│        │   │           └── LogConsoleView.java
-│        │   │
-│        │   ├── model/
-│        │   │   ├── Process.java
-│        │   │   ├── ProcessState.java
-│        │   │   ├── Burst.java
-│        │   │   └── Config.java
-│        │   │
-│        │   └── utils/
-│        │       ├── FileParser.java
-│        │       ├── SimulationFactory.java
-│        │       └── Logger.java
-│        │
-│        └── resources/
-│            ├── gui/
-│            │   ├── navigation/
-│            │   │   └── navbar.fxml
-│            │   │
-│            │   ├── pages/
-│            │   │   ├── config.fxml
-│            │   │   ├── dashboard.fxml
-│            │   │   ├── results.fxml
-│            │   │   └── settings.fxml
-│            │   │
-│            │   ├── dashboard/
-│            │   │   ├── cpu.fxml
-│            │   │   ├── memory.fxml
-│            │   │   └── sync.fxml
-│            │   │
-│            │   └── components/
-│            │       ├── gantt.fxml
-│            │       ├── frame_table.fxml
-│            │       ├── process_list.fxml
-│            │       └── log_console.fxml
-│            │
-│            ├── data/
-│            │   ├── procesos.txt
-│            │   ├── test_case_1.txt
-│            │   └── test_case_2.txt
-│            │
-│            └── application.css
+│       ├── java/
+│       │   ├── TestScheduler.java
+│       │   ├── TestScheduler2.java
+│       │   ├── model/
+│       │   │   ├── Burst.java
+│       │   │   ├── Config.java
+│       │   │   ├── DatosResultados.java
+│       │   │   ├── Process.java
+│       │   │   ├── ProcessState.java
+│       │   │   └── ResultadoProceso.java
+│       │   ├── modules/
+│       │   │   ├── gui/
+│       │   │   │   ├── MainFX.java
+│       │   │   │   ├── README.md
+│       │   │   │   ├── SimulationRunner.java
+│       │   │   │   ├── components/
+│       │   │   │   │   ├── GanttChart.java
+│       │   │   │   │   ├── MainWindow.java
+│       │   │   │   │   ├── MemoryTable.java
+│       │   │   │   │   ├── MemoryVisualizer.java
+│       │   │   │   │   └── SimulationControls.java
+│       │   │   │   ├── dashboard/
+│       │   │   │   │   ├── ExePanel.java
+│       │   │   │   │   ├── LogsPanel.java
+│       │   │   │   │   ├── MemPanel.java
+│       │   │   │   │   └── ProPanel.java
+│       │   │   │   └── pages/
+│       │   │   │       ├── ConfigPage.java
+│       │   │   │       ├── DashboardPage.java
+│       │   │   │       └── ResultadosPage.java
+│       │   │   ├── memory/
+│       │   │   │   ├── FIFO.java
+│       │   │   │   ├── LRU.java
+│       │   │   │   ├── MemoryEventListener.java
+│       │   │   │   ├── MemoryManager.java
+│       │   │   │   ├── NRU.java
+│       │   │   │   └── Optimal.java
+│       │   │   ├── scheduler/
+│       │   │   │   ├── FCFS.java
+│       │   │   │   ├── Priority.java
+│       │   │   │   ├── RoundRobin.java
+│       │   │   │   ├── SJF.java
+│       │   │   │   ├── SRT.java
+│       │   │   │   └── Scheduler.java
+│       │   │   └── sync/
+│       │   │       ├── IOManager.java
+│       │   │       ├── ProcessThread.java
+│       │   │       ├── SimulationEngine.java
+│       │   │       └── SimulationStateListener.java
+│       │   └── utils/
+│       │       ├── FileParser.java
+│       │       ├── Logger.java
+│       │       └── SimulationFactory.java
+│       └── resources/
+│           ├── data/
+│           │   └── procesos.txt
+│           └── gui/
+│               └── styles.css
 │
 └── docs/
-    ├── informe_ieee.pdf
-    ├── presentacion.pdf
     └── diagramas/
+        └── README.md
 
 
 ```
-
 ## 3. Compilacion 
 
 ### 3.1 En Ubuntu

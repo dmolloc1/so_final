@@ -1,0 +1,768 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+title Arquitectura del simulador
+
+package model {
+  class Config {
+    - totalFrames : int
+    - frameSize : int
+    - schedulerType : SchedulerType
+    - quantum : int
+    - replacementType : ReplacementType
+    - systemCallOverhead : int
+    - pageFaultPenalty : int
+    - contextSwitchOverhead : int
+    - timeUnit : int
+    + Config()
+    + Config(totalFrames:int, schedulerType:SchedulerType, replacementType:ReplacementType, quantum:int)
+    + getTotalFrames() : int
+    + setTotalFrames(totalFrames:int)
+    + getFrameSize() : int
+    + setFrameSize(frameSize:int)
+    + getSchedulerType() : SchedulerType
+    + setSchedulerType(schedulerType:SchedulerType)
+    + getQuantum() : int
+    + setQuantum(quantum:int)
+    + getReplacementType() : ReplacementType
+    + setReplacementType(replacementType:ReplacementType)
+    + isEnableIO() : boolean
+    + getTimeUnit() : int
+    + setTimeUnit(timeUnit:int)
+    + validate() : boolean
+    + getSystemCallOverhead() : int
+    + setSystemCallOverhead(overhead:int)
+    + getPageFaultPenalty() : int
+    + setPageFaultPenalty(penalty:int)
+    + getContextSwitchOverhead() : int
+    + setContextSwitchOverhead(overhead:int)
+    + toString() : String
+  }
+
+  enum Config.SchedulerType { FCFS, SJF, ROUND_ROBIN, PRIORITY }
+  enum Config.ReplacementType { FIFO, LRU, OPTIMAL, NRU }
+
+  class Process {
+    - pid : String
+    - arrivalTime : int
+    - priority : int
+    - bursts : List<Burst>
+    - currentBurstIndex : int
+    - state : ProcessState
+    - requiredPages : int
+    - loadedPages : Set<Integer>
+    - pageFaults : int
+    - startTime : int
+    - completionTime : int
+    - waitingTime : int
+    - responseTime : int
+    - hasStarted : boolean
+    - lastExecutionTime : int
+    - contextSwitchEndTime : int
+    - systemCallEndTime : int
+    - pageFaultEndTime : int
+    + Process(pid:String, arrivalTime:int, bursts:List<Burst>, priority:int, requiredPages:int)
+    + getCurrentBurst() : Burst
+    + advanceBurst()
+    + isCompleted() : boolean
+    + getTotalCPUTime() : int
+    + getTotalBurstTime() : int
+    + getTurnaroundTime() : int
+    + markFirstExecution(currentTime:int)
+    + incrementWaitingTime()
+    + loadPage(pageNumber:int)
+    + unloadPage(pageNumber:int)
+    + isPageLoaded(pageNumber:int) : boolean
+    + incrementPageFaults()
+    + clearLoadedPages()
+    + getters/setters for pid, arrivalTime, priority, state, requiredPages, loadedPages, pageFaults,
+      completionTime, waitingTime, responseTime, startTime, bursts, currentBurstIndex, remainingTime
+    + equals(o:Object) : boolean
+    + hashCode() : int
+    + toString() : String
+  }
+
+  class Burst {
+    + type : BurstType
+    + duration : int
+    + remainingTime : int
+    + Burst(type:BurstType, duration:int)
+    + execute(time:int) : boolean
+    + isCompleted() : boolean
+    + reset()
+    + getType() : BurstType
+    + getDuration() : int
+    + getRemainingTime() : int
+    + isCPU() : boolean
+    + isIO() : boolean
+    + copy() : Burst
+    + toString() : String
+  }
+  enum Burst.BurstType { CPU, IO }
+
+  enum ProcessState {
+    NEW, READY, RUNNING, BLOCKED_MEMORY, BLOCKED_IO, CONTEXT_SWITCHING, TERMINATED
+    + isBlocked() : boolean
+    + isAvailable() : boolean
+    + isActive() : boolean
+  }
+
+  class DatosResultados {
+    - tiempoEsperaPromedio : double
+    - tiempoRetornoPromedio : double
+    - tiempoRespuestaPromedio : double
+    - usoCpu : double
+    - ocioCpu : double
+    - procesosCompletados : int
+    - totalProcesos : int
+    - cambiosContexto : int
+    - tiempoCpu : int
+    - tiempoOcioso : int
+    - cargasTotales : int
+    - fallosPagina : int
+    - reemplazosPagina : int
+    - marcosTotales : int
+    - marcosLibres : int
+    - resumenProcesos : List<ResultadoProceso>
+    - algPlanificacion : String
+    - algMemoria : String
+    + DatosResultados(...)
+    + getters for all metrics
+    + prueba() : DatosResultados
+  }
+
+  class ResultadoProceso {
+    - pid : String
+    - tiempoEspera : int
+    - tiempoRetorno : int
+    - tiempoRespuesta : int
+    - fallosPagina : int
+    + ResultadoProceso(pid:String, tiempoEspera:int, tiempoRetorno:int, tiempoRespuesta:int, fallosPagina:int)
+    + getters for all fields
+  }
+}
+
+package utils {
+  class FileParser {
+    - BURST_PATTERN : Pattern
+    + parseConfig(filepath:String) : Config
+    + parseProcesses(filepath:String) : List<Process>
+    - parseProcessLine(line:String) : Process
+    - parseBursts(burstsString:String) : List<Burst>
+    - parseSchedulerType(value:String) : Config.SchedulerType
+    - parseReplacementType(value:String) : Config.ReplacementType
+  }
+
+  class SimulationFactory {
+    + createScheduler(config:Config) : Scheduler
+    + createMemoryManager(config:Config) : MemoryManager
+  }
+
+  class Logger {
+    - logs : List<LogEntry>
+    - enableConsoleOutput : boolean
+    - enableFileOutput : boolean
+    - logFilePath : String
+    - listeners : List<Consumer<LogEntry>>
+    + log(message:String)
+    + log(message:String, level:LogLevel)
+    + logStateChange(pid:String, oldState:ProcessState, newState:ProcessState, time:int)
+    + logBurstExecution(pid:String, burstType:String, duration:int, time:int)
+    + error(message:String)
+    + warning(message:String)
+    + debug(message:String)
+    + memLog(message:String)
+    + syncLog(message:String)
+    + procLog(message:String)
+    + exeLog(message:String)
+    + getAllLogs() : List<LogEntry>
+    + getLogsByLevel(level:LogLevel) : List<LogEntry>
+    + clear()
+    + exportToFile(filepath:String)
+    + setEnableConsoleOutput(enable:boolean)
+    + setEnableFileOutput(enable:boolean)
+    + setLogFilePath(path:String)
+    + memLoad(pid:String, page:int, frame:int)
+    + memHit(pid:String, page:int, frame:int)
+    + memFault(pid:String, page:int)
+    + memReplace(oldPid:String, oldPage:int, newPid:String, newPage:int, frame:int, reason:String)
+    + memSnapshot(frames:Frame[])
+    class LogEntry {
+      - message : String
+      - level : LogLevel
+      + LogEntry(message:String, level:LogLevel)
+      + getMessage() : String
+      + getLevel() : LogLevel
+      + toString() : String
+    }
+    enum LogLevel { INFO, WARNING, ERROR, DEBUG, EVENT, MEM, EXE, SYNC, PROC }
+  }
+}
+
+package modules.scheduler {
+  abstract class Scheduler {
+    # readyQueue : Queue<Process>
+    # currentProcess : Process
+    # currentTime : int
+    # contextSwitches : int
+    # totalWaitingTime : double
+    # totalTurnaroundTime : double
+    # totalResponseTime : double
+    # completedProcesses : int
+    # totalCPUTime : int
+    # idleTime : int
+    + Scheduler()
+    + addProcess(process:Process)
+    + confirmProcessSelection(process:Process)
+    + selectNextProcess() : Process
+    + shouldPreempt(current:Process, candidate:Process) : boolean
+    + getAlgorithmName() : String
+    # contextSwitch(newProcess:Process)
+    + onProcessComplete(process:Process)
+    + updateCurrentProcess(process:Process)
+    + incrementTime()
+    + recordCPUTime(time:int)
+    + recordIdleTime(time:int)
+    + getAverageWaitingTime() : double
+    + getAverageTurnaroundTime() : double
+    + getAverageResponseTime() : double
+    + getCPUUtilization() : double
+    + getContextSwitches() : int
+    + getCurrentTime() : int
+    + getTotalCPUTime() : int
+    + getIdleTime() : int
+    + getCompletedProcesses() : int
+    + getTiempoCpuTotal() : int
+    + getTiempoOcioso() : int
+    + getCambiosContexto() : int
+    + getCPUTimePercent() : double
+    + setCurrentTime(time:int)
+    + setCurrentProcess(process:Process)
+    + getCurrentProcess() : Process
+    + getReadyQueueSnapshot() : List<Process>
+    + peekNextProcess() : Process
+    + getReadyQueueSize() : int
+    + hasReadyProcesses() : boolean
+    + forceContextSwitch()
+    + printMetrics()
+    + reset()
+  }
+
+  class FCFS {
+    + FCFS()
+    + selectNextProcess() : Process
+    + shouldPreempt(current:Process, candidate:Process) : boolean
+    + getAlgorithmName() : String
+  }
+
+  class SJF {
+    + SJF()
+    + selectNextProcess() : Process
+    + shouldPreempt(current:Process, candidate:Process) : boolean
+    + getAlgorithmName() : String
+  }
+
+  class SRT {
+    + SRT()
+    + selectNextProcess() : Process
+    + shouldPreempt(current:Process, candidate:Process) : boolean
+    + getAlgorithmName() : String
+  }
+
+  class RoundRobin {
+    - quantum : int
+    - currentQuantumRemaining : int
+    + RoundRobin(quantum:int)
+    + selectNextProcess() : Process
+    + shouldPreempt(current:Process, candidate:Process) : boolean
+    + decrementaQuantum()
+    + isQuantumAgotado() : boolean
+    + resetQuantum()
+    + confirmProcessSelection(process:Process)
+    + getAlgorithmName() : String
+    + getQuantum() : int
+    + getCurrentQuantumRemaining() : int
+  }
+
+  class Priority {
+    - isPreemptive : boolean
+    + Priority()
+    + Priority(preemptive:boolean)
+    + selectNextProcess() : Process
+    + shouldPreempt(current:Process, candidate:Process) : boolean
+    + getAlgorithmName() : String
+    + isPreemptive() : boolean
+  }
+
+  Scheduler <|-- FCFS
+  Scheduler <|-- SJF
+  Scheduler <|-- SRT
+  Scheduler <|-- RoundRobin
+  Scheduler <|-- Priority
+}
+
+package modules.memory {
+  interface MemoryEventListener {
+    + onPageAccess(frameIndex:int, pid:String, page:int, hit:boolean)
+    + onPageFault(pid:String, page:int)
+    + onFrameLoaded(frameIndex:int, pid:String, page:int)
+    + onFrameEvicted(frameIndex:int, oldPid:String, oldPage:int)
+    + onVictimChosen(frameIndex:int, reason:String)
+    + onSnapshot(snapshot:String)
+  }
+
+  abstract class MemoryManager {
+    - listeners : List<MemoryEventListener>
+    - totalFrames : int
+    - frames : Frame[]
+    - processPageMap : Map<String, Set<Integer>>
+    - currentTime : int
+    - pageFaults : int
+    - pageReplacements : int
+    - totalPageLoads : int
+    + MemoryManager(totalFrames:int)
+    + addListener(listener:MemoryEventListener)
+    + loadPage(process:Process, pageNumber:int) : boolean
+    + isPageLoaded(pid:String, pageNumber:int) : boolean
+    + getLoadedPages(pid:String) : Set<Integer>
+    + freeProcessPages(pid:String)
+    + getMemorySnapshotCompact() : String
+    + getFreeFrames() : int
+    + getPageFaults() : int
+    + getPageReplacements() : int
+    + getTotalPageLoads() : int
+    + getTotalFrames() : int
+    + getCurrentTime() : int
+    + getMarcosLibres() : int
+    + setCurrentTime(time:int)
+    + getAlgorithmName() : String
+    + printMetrics()
+    + reset()
+    # selectVictimFrame(requestingProcess:Process, requestedPage:int) : int
+    # accessPage(pid:String, pageNumber:int)
+    # findFreeFrame() : int
+    # loadPageToFrame(frameIndex:int, pid:String, pageNumber:int)
+    # replacePage(frameIndex:int, newPid:String, newPage:int)
+    class Frame {
+      - processId : String
+      - pageNumber : int
+      - loadTime : int
+      - lastAccessTime : int
+      - referenced : boolean
+      - modified : boolean
+      - isOccupied : boolean
+      + Frame()
+      + load(pid:String, page:int, time:int)
+      + unload()
+      + access(time:int)
+      + markRead()
+      + markWrite()
+      + resetReferenced()
+      + getters
+      + toString() : String
+    }
+  }
+
+  class FIFO {
+    - frameQueue : Queue<Integer>
+    + FIFO(totalFrames:int)
+    + selectVictimFrame(requestingProcess:Process, requestedPage:int) : int
+    + loadPageToFrame(frameIndex:int, pid:String, pageNumber:int)
+    + replacePage(frameIndex:int, newPid:String, newPage:int)
+    + getAlgorithmName() : String
+    + reset()
+    + getQueueState() : String
+    + getQueueSize() : int
+    + isInQueue(frameIndex:int) : boolean
+    + getQueueSnapshot() : Queue<Integer>
+    + printQueueState()
+  }
+
+  class LRU {
+    + LRU(totalFrames:int)
+    + selectVictimFrame(requestingProcess:Process, requestedPage:int) : int
+    + getAlgorithmName() : String
+    + getAccessState() : String
+    + printAccessState()
+  }
+
+  class Optimal {
+    - futureAccesses : Map<String, List<Integer>>
+    + Optimal(totalFrames:int)
+    + setFutureAccesses(pid:String, accesses:List<Integer>)
+    + selectVictimFrame(requestingProcess:Process, requestedPage:int) : int
+    + getAlgorithmName() : String
+    + getFutureState(pid:String) : String
+    + printFutureState(pid:String)
+  }
+
+  class NRU {
+    + NRU(totalFrames:int)
+    + selectVictimFrame(requestingProcess:Process, requestedPage:int) : int
+    + getAlgorithmName() : String
+    + getClassState() : String
+    + printClassState()
+  }
+
+  MemoryManager <|-- FIFO
+  MemoryManager <|-- LRU
+  MemoryManager <|-- Optimal
+  MemoryManager <|-- NRU
+}
+
+package modules.sync {
+  class SimulationEngine {
+    - scheduler : Scheduler
+    - memoryManager : MemoryManager
+    - syncController : SyncController
+    - ioManager : IOManager
+    - allProcesses : List<Process>
+    - processThreads : List<ProcessThread>
+    - config : Config
+    - datosFinales : DatosResultados
+    - engineMonitor : Object
+    - currentTime : int
+    - cContexto : int
+    - running : boolean
+    - stateListener : SimulationStateListener
+    - executionStartTimes : Map<String, Integer>
+    + SimulationEngine(scheduler:Scheduler, memoryManager:MemoryManager, processes:List<Process>, config:Config)
+    + setStateListener(listener:SimulationStateListener)
+    + run()
+    + getDatosFinales() : DatosResultados
+    - construirResultados() : DatosResultados
+    - startAllThreads()
+    - coordinationLoop()
+    - handleContextSwitchCompletion(currentTime:int)
+    - countContextSwitchingCycles()
+    - notifyProcessArrivals(t:int)
+    - updateWaitingTimes()
+    - notifyBlockedProcesses()
+    - advanceTime()
+    - coordinateScheduler()
+    - validateAndContinueProcess(current:Process)
+    - handleQuantumExpropriation(current:Process)
+    - selectNextProcess()
+    - wakeUpProcessThread(process:Process)
+    - allProcessesCompleted() : boolean
+    - waitForAllThreads()
+    - showResults()
+    + stop()
+    - sleep(ms:int)
+    + getCurrentTime() : int
+    + isRunning() : boolean
+    + getSyncController() : SyncController
+  }
+
+  class SyncController {
+    - scheduler : Scheduler
+    - memoryManager : MemoryManager
+    - coordinationMonitor : Object
+    - running : boolean
+    - config : Config
+    + SyncController(scheduler:Scheduler, memoryManager:MemoryManager, config:Config)
+    + prepareProcessForExecution(process:Process) : boolean
+    + canProcessExecute(process:Process) : boolean
+    + hasAllRequiredPages(process:Process) : boolean
+    + blockProcessForMemory(process:Process)
+    + notifyProcessReady(process:Process, reason:String)
+    + releaseProcessResources(process:Process)
+    + synchronizeTime(time:int)
+    + getCurrentTime() : int
+    + start()
+    + stop()
+    + waitForReadyProcess()
+    + triggerReschedule()
+    + isRunning() : boolean
+    - loadRequiredPages(process:Process) : boolean
+    + getScheduler() : Scheduler
+    + getMemoryManager() : MemoryManager
+    + getCoordinationMonitor() : Object
+  }
+
+  class ProcessThread {
+    - process : Process
+    - syncController : SyncController
+    - ioManager : IOManager
+    - threadMonitor : Object
+    - running : boolean
+    - stateListener : SimulationStateListener
+    - executionStartTimes : Map<String, Integer>
+    + ProcessThread(process:Process, syncController:SyncController, ioManager:IOManager, config:Config)
+    + setStateListener(listener:SimulationStateListener, startTimes:Map<String,Integer>)
+    + run()
+    - waitForArrival()
+    - arriveAtSystem()
+    - mainExecutionLoop()
+    - waitForRunningState()
+    - executeCPUBurst(burst:Burst)
+    - executeOneCPUUnit(burst:Burst)
+    - handleMemoryLack()
+    - executeIOBurst(burst:Burst)
+    - handleBurstCompletion(currentBurst:Burst)
+    - terminateProcess()
+    - printFinalMetrics()
+    - notifyExecutionEnd(reason:String)
+    + wakeUp()
+    + stopThread()
+    + getProcess() : Process
+  }
+
+  class IOManager {
+    - ioQueue : BlockingQueue<IORequest>
+    - syncController : SyncController
+    - running : AtomicBoolean
+    - ioThread : Thread
+    - ioMonitor : Object
+    - totalIOOperations : AtomicInteger
+    - completedIOOperations : AtomicInteger
+    - totalIOTime : AtomicInteger
+    - config : Config
+    + IOManager(syncController:SyncController, config:Config)
+    + start()
+    + run()
+    + stop()
+    + requestIO(process:Process, ioBurst:Burst)
+    - processIORequest(request:IORequest)
+    - waitUntilIOCompletes(process:Process, endTime:int)
+    - completeIOOperation(process:Process, ioBurst:Burst, duration:int)
+    - waitForSystemCallCompletion(process:Process)
+    + isRunning() : boolean
+    + getPendingRequests() : int
+    + getStatistics() : IOStatistics
+    class IORequest { +process:Process; +ioBurst:Burst }
+    class IOStatistics {
+      + totalRequests : int
+      + completedRequests : int
+      + totalTime : int
+      + pendingRequests : int
+      + IOStatistics(total:int, completed:int, totalTime:int, pending:int)
+      + getAverageIOTime() : double
+      + getCompletionRate() : double
+      + toString() : String
+    }
+  }
+
+  interface SimulationStateListener {
+    + onReadyQueueChanged(readyQueue:List<Process>)
+    + onBlockedIOChanged(blockedIO:List<Process>)
+    + onBlockedMemoryChanged(blockedMemory:List<Process>)
+    + onProcessStateChanged(process:Process)
+    + onTimeChanged(currentTime:int)
+    + onProcessExecutionStarted(pid:String, startTime:int)
+    + onProcessExecutionEnded(pid:String, endTime:int)
+    + onContextSwitch()
+  }
+}
+
+package modules.gui {
+  class MainFX {
+    - pages : Map<String, VBox>
+    - navButtons : Map<String, Button>
+    - dashboardPage : DashboardPage
+    - configPage : ConfigPage
+    + start(stage:Stage)
+    - crearPaginas(stage:Stage)
+    - crearNavbar() : HBox
+    - crearNavButton(text:String, pageKey:String) : Button
+    - activarBoton(activeKey:String)
+    - switchPage(key:String)
+    + showResultados(nResultados:ResultadosPage)
+    + main(args:String[])
+  }
+
+  class SimulationRunner {
+    + runSimulation(config:Config, processPath:String, dashboardPage:DashboardPage, memPanel:MemPanel, mainFx:MainFX)
+    - printSystemConfiguration(config:Config, processes:List<Process>, scheduler:Scheduler, memoryManager:MemoryManager)
+  }
+
+  package pages {
+    class ConfigPage
+    class DashboardPage {
+      + getProPanel() : ProPanel
+      + getExePanel() : ExePanel
+      + getMemPanel() : MemPanel
+      + setConfigPage(configPage:ConfigPage)
+    }
+    class ResultadosPage
+  }
+
+  package dashboard {
+    class ProPanel {
+      - readyContainer : VBox
+      - blockedIOContainer : VBox
+      - blockedMemoryContainer : VBox
+      + ProPanel()
+      + updateReadyQueue(processes:List<Process>)
+      + updateBlockedIO(processes:List<Process>)
+      + updateBlockedMemory(processes:List<Process>)
+    }
+    class ExePanel {
+      - ganttChart : GanttChart
+      - cpuUtilLabel : VBox
+      - contextSwitchLabel : VBox
+      - avgWaitLabel : VBox
+      - totalCPUTime : int
+      - totalIdleTime : int
+      - contextSwitches : int
+      - avgWaitTime : double
+      + ExePanel()
+      + addExecution(pid:String, startTime:int, endTime:int)
+      + addExecutionStart(pid:String, startTime:int)
+      + addExecutionEnd(pid:String, endTime:int)
+      + setCurrentTime(time:int)
+      + incrementContextSwitch()
+      + setIdleTime(idleTime:int)
+      + setAvgWaitTime(waitTime:double)
+      + clearGantt()
+      + initializeProcesses(processIds:List<String>)
+    }
+    class MemPanel {
+      - config : Config
+      - visualizer : MemoryVisualizer
+      + MemPanel()
+      + MemPanel(config:Config)
+      + setConfig(config:Config)
+      - showPlaceholder(msg:String)
+      + getVisualizer() : MemoryVisualizer
+      + bindMemoryManager(mm:MemoryManager)
+    }
+    class LogsPanel {
+      - list : ListView<Logger.LogEntry>
+      + LogsPanel()
+    }
+  }
+
+  package components {
+    class MainWindow
+    class SimulationControls
+    class MemoryVisualizer {
+      - totalFrames : int
+      - physicalFramesContainer : VBox
+      - pageTablesContainer : VBox
+      - algorithmLabel : Label
+      - victimInfoLabel : Label
+      - processPageTables : Map<String, ProcessPageTable>
+      - physicalFrames : Map<Integer, PhysicalFrameCard>
+      - currentAlgorithm : String
+      - processColors : Color[]
+      - colorIndex : int
+      + MemoryVisualizer()
+      + MemoryVisualizer(algor:ReplacementType, frames:int)
+      - buildEmptyUI()
+      + initialize(algor:ReplacementType, frames:int)
+      + buildPhysicalFrames()
+      + setAlgorithm(algorithm:String)
+      + registerProcess(pid:String, minPages:int)
+      - registerProcessSync(pid:String, minPages:int)
+      + onPageAccess(frameIndex:int, pid:String, page:int, hit:boolean)
+      + onPageFault(pid:String, page:int)
+      + onFrameLoaded(frameIndex:int, pid:String, page:int)
+      + onFrameEvicted(frameIndex:int, oldPid:String, oldPage:int)
+      + onVictimChosen(frameIndex:int, reason:String)
+      + onSnapshot(snapshot:String)
+      class ProcessPageTable {
+        - pid : String
+        - processColor : Color
+        - pages : Map<Integer, PageEntry>
+        - pageGrid : GridPane
+        + ProcessPageTable(pid:String, totalPages:int, processColor:Color)
+        + getColor() : Color
+        + loadPage(page:int, frame:int)
+        + evictPage(page:int)
+        + markPageFault(page:int)
+        + ensurePageCapacity(minPages:int)
+      }
+      class PageEntry {
+        - pageNumber : int
+        - pageLabel : Label
+        - frameLabel : Label
+        - loaded : boolean
+        + PageEntry(pageNumber:int)
+        + load(frame:int)
+        + evict()
+        + fault()
+      }
+      class PhysicalFrameCard {
+        - frameIndex : int
+        - frameLabel : Label
+        - contentLabel : Label
+        - colorIndicator : Rectangle
+        - occupied : boolean
+        + PhysicalFrameCard(frameIndex:int)
+        + load(pid:String, page:int, processColor:Color)
+        + evict()
+        + highlightHit()
+        + highlightVictim()
+        + flashFault()
+      }
+    }
+    class MemoryTable
+    class GanttChart {
+      + addExecution(pid:String, start:int, end:int)
+      + addExecutionStart(pid:String, start:int)
+      + addExecutionEnd(pid:String, end:int)
+      + setCurrentTime(time:int)
+      + clear()
+      + initializeProcesses(processIds:List<String>)
+    }
+    class SimulationControls
+  }
+}
+
+FileParser --> Process : "crea procesos"
+SimulationFactory --> Scheduler : "createScheduler()"
+SimulationFactory --> MemoryManager : "createMemoryManager()"
+SimulationRunner --> FileParser : "parseProcesses()"
+SimulationRunner --> SimulationFactory
+SimulationRunner --> SimulationEngine : "runSimulation()"
+SimulationRunner --> DashboardPage
+SimulationRunner --> MemPanel
+
+SimulationEngine --> Scheduler
+SimulationEngine --> MemoryManager
+SimulationEngine --> SyncController
+SimulationEngine --> IOManager
+SimulationEngine --> SimulationStateListener
+SimulationEngine --> ProcessThread
+SimulationEngine --> Process
+
+SyncController --> Scheduler : "coordina ready/ejecución"
+SyncController --> MemoryManager : "gestiona memoria"
+SyncController --> IOManager : "cola I/O"
+IOManager --> Process : "bloqueo/IO"
+ProcessThread --> Process
+
+MemoryManager --> MemoryEventListener : "notifica"
+MemoryVisualizer ..|> MemoryEventListener
+MemoryVisualizer --> MemoryManager : "renderiza"
+MemPanel --> MemoryVisualizer
+MemPanel --> MemoryManager
+
+MainFX --> MainWindow
+MainFX --> SimulationRunner
+MainFX --> ConfigPage
+MainFX --> DashboardPage
+MainFX --> ResultadosPage
+
+ProPanel --> Process
+ExePanel --> Process
+LogsPanel --> Logger.LogEntry
+DashboardPage --> ProPanel
+DashboardPage --> ExePanel
+DashboardPage --> LogsPanel
+DashboardPage --> MemPanel
+ResultadosPage --> DatosResultados
+ResultadosPage --> ResultadoProceso
+
+Process --> Burst
+Process --> ProcessState
+Scheduler --> Process : "readyQueue"
+MemoryManager --> Process : "frames por PID"
+Config --> SchedulerType
+Config --> ReplacementType
+SimulationEngine --> Config
+
+@enduml
