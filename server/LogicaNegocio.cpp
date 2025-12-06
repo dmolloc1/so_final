@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QDebug>
 #include <algorithm>
+#include <unordered_map>
 #include <set>
 
 LogicaNegocio* LogicaNegocio::s_instance = nullptr;
@@ -79,11 +80,12 @@ QJsonObject LogicaNegocio::getEstadoParaRanking() {
   };
   std::vector<ItemRanking> lista;
 
-  for (auto const& [id, cantidad] : m_pedidoRepository.conteoRanking()) {
-    const PlatoDefinicion* plato = m_menuRepository.obtenerPlato(id);
-    if (plato) {
-      lista.push_back({QString::fromStdString(plato->nombre), cantidad});
-    }
+  // Aseguramos que todos los platos del menú aparezcan en el ranking,
+  // aunque aún no tengan ventas registradas.
+  std::unordered_map<int, int> conteo = m_pedidoRepository.conteoRanking();
+  for (const auto& [id, plato] : m_menuRepository.menu()) {
+    int cantidad = conteo.contains(id) ? conteo[id] : 0;
+    lista.push_back({QString::fromStdString(plato.nombre), cantidad});
   }
 
   // Ordenar (Mayor a menor cantidad)
