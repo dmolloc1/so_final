@@ -1,0 +1,5 @@
+Commit: Cola de pedidos y procesamiento
+Archivos y cambios:
+- server/LogicaNegocio.h: se agregó QQueue<PedidoDTO> y un QMutex para proteger la cola (líneas 45-80).
+- server/LogicaNegocio.cpp: se implementaron recibirPedido(), enviarMenu() y procesarPedidos() para encolar y despachar pedidos (líneas 90-210).
+- server/LogicaNegocioHandlers.h: se definieron helpers para serializar/deserializar pedidos en los sockets (líneas 10-50).

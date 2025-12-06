@@ -1,0 +1,6 @@
+Commit: Extracción de menú a repositorio
+Archivos y cambios:
+- server/repository/MenuRepository.h: interfaz para cargar y consultar platos disponibles (líneas 1-35).
+- server/repository/MenuRepository.cpp: implementación que lee el menú desde archivo y expone búsqueda por nombre (líneas 1-70).
+- server/LogicaNegocio.cpp: sustituye acceso directo a la lista de menú por el repositorio (líneas 60-140).
+- server/CMakeLists.txt: se incluyen las nuevas fuentes en la compilación (líneas 10-20).

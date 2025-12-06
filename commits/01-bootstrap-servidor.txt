@@ -1,0 +1,5 @@
+Commit: Bootstrap inicial del servidor Qt
+Archivos y cambios:
+- server/LogicaNegocio.h: se declararon señales, slots y locks básicos para coordinar pedidos (líneas 10-55).
+- server/LogicaNegocio.cpp: se implementaron constructores, conexión de señales y el esqueleto de manejo de sockets entrantes (líneas 12-140).
+- server/CMakeLists.txt: se agregó el objetivo ejecutable del servidor y dependencias de Qt (líneas 1-25).

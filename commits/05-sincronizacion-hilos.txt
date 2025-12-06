@@ -1,0 +1,5 @@
+Commit: Sincronización y manejo de hilos
+Archivos y cambios:
+- server/LogicaNegocio.h: se añadieron QReadWriteLock y señales específicas para evitar condiciones de carrera (líneas 60-95).
+- server/LogicaNegocio.cpp: se encapsuló el acceso a la cola y ranking con locks de lectura/escritura y se mejoró el ciclo de procesamiento (líneas 120-260).
+- server/LogicaNegocioHandlers.h: se ajustaron callbacks para operar de forma segura en hilos de cliente (líneas 20-60).

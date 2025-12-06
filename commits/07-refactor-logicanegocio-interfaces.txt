@@ -1,0 +1,4 @@
+Commit: Preparación para repositorios
+Archivos y cambios:
+- server/LogicaNegocio.h: se desacoplaron colecciones internas detrás de métodos de acceso privados (líneas 40-90).
+- server/LogicaNegocio.cpp: se aislaron lecturas de menú y ranking en funciones dedicadas para facilitar extracción (líneas 100-230).

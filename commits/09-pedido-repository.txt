@@ -1,0 +1,5 @@
+Commit: Repositorio de pedidos
+Archivos y cambios:
+- server/repository/PedidoRepository.h: contrato para encolar y despachar pedidos de manera segura (líneas 1-30).
+- server/repository/PedidoRepository.cpp: implementación basada en QQueue y QMutex para pop/push thread-safe (líneas 1-60).
+- server/LogicaNegocio.cpp: reemplaza la cola interna por el repositorio para recibir y procesar pedidos (líneas 90-190).

@@ -1,0 +1,5 @@
+Commit: Carga inicial de menú estático
+Archivos y cambios:
+- server/LogicaNegocio.h: se añadió QList<MenuItem> para retener platos disponibles (líneas 35-60).
+- server/LogicaNegocio.cpp: se cargaron elementos del menú de un recurso local y se expuso getter para enviarlo a clientes (líneas 70-150).
+- data/menu.txt: se creó el archivo de menú con platos base para pruebas (líneas 1-20).

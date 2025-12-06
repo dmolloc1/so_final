@@ -1,0 +1,3 @@
+Commit: Documentación de patrones propuestos
+Archivos y cambios:
+- server/patrones.txt: se creó archivo explicando uso de Reactor en Qt y la conveniencia de introducir Repository para datos (líneas 1-40).

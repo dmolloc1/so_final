@@ -1,0 +1,6 @@
+Commit: Repositorio de ranking y documentación final
+Archivos y cambios:
+- server/repository/RankingRepository.h: interfaz para incrementar y recuperar ranking de platos (líneas 1-30).
+- server/repository/RankingRepository.cpp: implementación con QHash y protección de mutex para actualizar conteos (líneas 1-50).
+- server/LogicaNegocio.cpp: actualiza procesarPedido() y consultas de ranking para delegar en el nuevo repositorio (líneas 100-200).
+- server/patrones.txt: se marcó Repository como IMPLEMENTADO junto al Reactor existente (líneas 1-60).

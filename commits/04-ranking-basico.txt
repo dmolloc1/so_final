@@ -1,0 +1,4 @@
+Commit: Conteo básico de ranking
+Archivos y cambios:
+- server/LogicaNegocio.h: se introdujo QMap<QString, int> rankingPlatos para llevar el conteo de pedidos (líneas 50-85).
+- server/LogicaNegocio.cpp: se incrementa ranking al procesar cada pedido y se añade método para devolver el top a clientes (líneas 160-240).
