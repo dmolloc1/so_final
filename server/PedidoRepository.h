@@ -24,8 +24,9 @@ public:
   std::unordered_map<std::string, ColaPrioridadPlatos>& colasPorEstacion();
   const std::unordered_map<std::string, ColaPrioridadPlatos>& colasPorEstacion() const;
 
-  std::unordered_map<int, int>& conteoRanking();
-  const std::unordered_map<int, int>& conteoRanking() const;
+  void incrementarConteoRanking(int idPlato);
+  void decrementarConteoRanking(int idPlato);
+  std::unordered_map<int, int> obtenerConteoRanking() const;
 
 private:
   long long m_siguienteIdPedido;

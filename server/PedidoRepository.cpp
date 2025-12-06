@@ -32,10 +32,19 @@ const std::unordered_map<std::string, ColaPrioridadPlatos>& PedidoRepository::co
   return m_colasPorEstacion;
 }
 
-std::unordered_map<int, int>& PedidoRepository::conteoRanking() {
-  return m_conteoPlatosRanking;
+void PedidoRepository::incrementarConteoRanking(int idPlato) {
+  m_conteoPlatosRanking[idPlato]++;
 }
 
-const std::unordered_map<int, int>& PedidoRepository::conteoRanking() const {
+void PedidoRepository::decrementarConteoRanking(int idPlato) {
+  auto it = m_conteoPlatosRanking.find(idPlato);
+  if (it == m_conteoPlatosRanking.end()) return;
+
+  if (--(it->second) <= 0) {
+    m_conteoPlatosRanking.erase(it);
+  }
+}
+
+std::unordered_map<int, int> PedidoRepository::obtenerConteoRanking() const {
   return m_conteoPlatosRanking;
 }

@@ -82,7 +82,7 @@ QJsonObject LogicaNegocio::getEstadoParaRanking() {
 
   // Aseguramos que todos los platos del menú aparezcan en el ranking,
   // aunque aún no tengan ventas registradas.
-  std::unordered_map<int, int> conteo = m_pedidoRepository.conteoRanking();
+  std::unordered_map<int, int> conteo = m_pedidoRepository.obtenerConteoRanking();
   for (const auto& [id, plato] : m_menuRepository.menu()) {
     int cantidad = conteo.contains(id) ? conteo[id] : 0;
     lista.push_back({QString::fromStdString(plato.nombre), cantidad});
@@ -113,7 +113,11 @@ void LogicaNegocio::registrarVenta(int idPlato) {
   QJsonObject rankingMsg;
   {
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_pedidoRepository.conteoRanking()[idPlato]++;
+    if (!m_menuRepository.obtenerPlato(idPlato)) {
+      qWarning() << "Venta ignorada: el plato con ID" << idPlato << "no existe en el menú.";
+      return;
+    }
+    m_pedidoRepository.incrementarConteoRanking(idPlato);
   }
 
   // Método centralizado
@@ -547,7 +551,7 @@ void LogicaNegocio::procesarConfirmarEntrega(const QJsonObject& mensaje, Manejad
   for (auto cli : m_manejadoresActivos) emit enviarRespuesta(cli, msg);
 
   // Actualizar ranking
-  for (const auto& inst : pedido.platos) m_pedidoRepository.conteoRanking()[inst.id_plato_definicion]++;
+  for (const auto& inst : pedido.platos) m_pedidoRepository.incrementarConteoRanking(inst.id_plato_definicion);
   notificarActualizacionRanking();
 
   qInfo() << "Pedido" << idPedido << "ENTREGADO correctamente.";
@@ -625,7 +629,7 @@ void LogicaNegocio::procesarDevolverPlato(const QJsonObject& mensaje, ManejadorC
   platoPrior.id_pedido = idPedido;
   m_pedidoRepository.colasPorEstacion()[estacionObjetivo].push(platoPrior);
 
-  m_pedidoRepository.conteoRanking()[plato->id_plato_definicion]--;
+  m_pedidoRepository.decrementarConteoRanking(plato->id_plato_definicion);
 
     QJsonObject dataResp;
     dataResp["id_pedido"] = static_cast<int>(idPedido);
