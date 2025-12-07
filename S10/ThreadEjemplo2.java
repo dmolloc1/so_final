@@ -1,6 +1,3 @@
-// Ejercicio 2: ThreadEjemplo2.java
-// Copia y pega en ThreadEjemplo2.java para compilar con javac
-/*
 public class ThreadEjemplo2 implements Runnable {
     public void run() {
         for (int i = 0; i < 5; i++) {
@@ -15,6 +12,3 @@ public class ThreadEjemplo2 implements Runnable {
         System.out.println("Termina thread main");
     }
 }
-*/
-
-int main() { return 0; }

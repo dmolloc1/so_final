@@ -1,6 +1,3 @@
-// Ejercicio 7: MultiHola.java
-// Copia y pega en MultiHola.java para compilar con javac
-/*
 class TestTh extends Thread {
     private String nombre;
     private int retardo;
@@ -15,19 +12,19 @@ class TestTh extends Thread {
             sleep(retardo);
         } catch (InterruptedException e) {
         }
+
         System.out.println("Hola Mundo! " + nombre + " " + retardo);
     }
 }
 
 public class MultiHola {
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         TestTh t1, t2;
+
         t1 = new TestTh("Thread 1", (int) (Math.random() * 2000));
         t2 = new TestTh("Thread 2", (int) (Math.random() * 2000));
+
         t1.start();
         t2.start();
     }
 }
-*/
-
-int main() { return 0; }

@@ -1,12 +1,9 @@
-// Ejercicio 9: MethodTest.java
-// Copia y pega en MethodTest.java para compilar con javac
-/*
 import java.io.*;
 
 public class MethodTest {
     static PrintWriter out = new PrintWriter(System.out, true);
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         FirstThread first = new FirstThread();
         SecondThread second = new SecondThread();
         first.start();
@@ -49,6 +46,3 @@ class SecondThread extends Thread {
         }
     }
 }
-*/
-
-int main() { return 0; }

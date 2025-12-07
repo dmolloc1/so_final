@@ -1,6 +1,3 @@
-// Ejercicio 4: MostrarCeroUnoHilo2.java
-// Copia y pega en MostrarCeroUnoHilo2.java para compilar con javac
-/*
 public class MostrarCeroUnoHilo2 {
     public static void main(String[] args) {
         HiloMostrarCero h1 = new HiloMostrarCero();
@@ -39,6 +36,3 @@ class HiloMostrarUno implements Runnable {
         }
     }
 }
-*/
-
-int main() { return 0; }

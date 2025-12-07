@@ -1,8 +1,5 @@
-// Ejercicio 6: java1003.java
-// Copia y pega en java1003.java para compilar con javac
-/*
 class java1003 {
-    static public void main(String args[]) {
+    public static void main(String[] args) {
         Thread hiloA = new MiHilo();
         Thread hiloB = new MiHilo();
 
@@ -11,7 +8,8 @@ class java1003 {
 
         try {
             Thread.currentThread().sleep(1000);
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+        }
 
         System.out.println(Thread.currentThread());
 
@@ -25,6 +23,3 @@ class MiHilo extends Thread {
         System.out.println(Thread.currentThread());
     }
 }
-*/
-
-int main() { return 0; }

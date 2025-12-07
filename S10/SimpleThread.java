@@ -1,6 +1,3 @@
-// Ejercicio 10: SimpleThread.java
-// Copia y pega en SimpleThread.java para compilar con javac
-/*
 public class SimpleThread extends Thread {
     private int countDown = 5;
     private int threadNumber;
@@ -14,7 +11,9 @@ public class SimpleThread extends Thread {
     public void run() {
         while (true) {
             System.out.println("Thread " + threadNumber + "(" + countDown + ")");
-            if (--countDown == 0) return;
+            if (--countDown == 0) {
+                return;
+            }
         }
     }
 
@@ -25,6 +24,3 @@ public class SimpleThread extends Thread {
         System.out.println("All Threads Started");
     }
 }
-*/
-
-int main() { return 0; }

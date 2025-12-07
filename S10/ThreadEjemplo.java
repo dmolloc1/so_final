@@ -1,6 +1,3 @@
-// Ejercicio 1: ThreadEjemplo.java
-// Copia y pega en ThreadEjemplo.java para compilar con javac
-/*
 public class ThreadEjemplo extends Thread {
     public ThreadEjemplo(String str) {
         super(str);
@@ -19,6 +16,3 @@ public class ThreadEjemplo extends Thread {
         System.out.println("Termina thread main");
     }
 }
-*/
-
-int main() { return 0; }
