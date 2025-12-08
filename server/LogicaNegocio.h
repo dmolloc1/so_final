@@ -77,6 +77,8 @@ private:
 
   // Emitir broadcast de ranking
   void notificarActualizacionRanking();
-};
+
+  void manejarExcepcion(const QString& contexto, ManejadorCliente* cliente, const std::exception* ex = nullptr);
+}; 
 
 #endif
