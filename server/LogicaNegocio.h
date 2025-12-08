@@ -19,9 +19,6 @@
 
 class ManejadorCliente;
 
-using ColaPrioridadPlatos = std::priority_queue<InfoPlatoPrioridad, std::vector<InfoPlatoPrioridad>,
-      std::greater<InfoPlatoPrioridad>>;
-
 class LogicaNegocio : public QObject {
   Q_OBJECT
 

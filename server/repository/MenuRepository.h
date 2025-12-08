@@ -2,7 +2,7 @@
 #define MENUREPOSITORY_H
 
 #include "common/models/PlatoDefinicion.h"
-#include "common/adapter/SerializadorJSON.h"
+#include "common/adapter/AdaptadorSerializadorJSON.h"
 #include <unordered_map>
 #include <QJsonArray>
 
