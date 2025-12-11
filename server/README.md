@@ -1,126 +1,231 @@
-# Servidor Altokepe
+# Módulo Servidor - Altokepe
 
-## Arquitectura
+## Tabla de Contenidos
+1. [Resumen Ejecutivo](#resumen-ejecutivo)
+2. [Arquitectura General](#arquitectura-general)
+3. [Patrón Observer](#patrón-observer)
+4. [Patrón Facade](#patrón-facade)
+5. [Patrón Repository](#patrón-repository)
+6. [Patrón Command](#patrón-command)
+7. [Implementación del Servidor](#implementación-del-servidor)
+8. [Protocolo de Comunicación](#protocolo-de-comunicación)
+9. [Decisiones de Diseño](#decisiones-de-diseño)
+10. [Diagrama de Secuencia](#diagrama-de-secuencia)
+11. [Conclusiones](#conclusiones)
 
-### Componentes Principales
+---
 
-**Servidor (`Servidor`)**
-- Escucha conexiones TCP en el puerto 5555
-- Crea un thread independiente para cada cliente conectado
-- Gestiona comunicación asíncrona mediante signals/slots de Qt
+## Resumen Ejecutivo
 
-**Manejador de Cliente (`ManejadorCliente`)**
-- Gestiona la conexión individual de cada cliente
-- Identifica el tipo de actor (Recepcionista, ManagerChef, EstacionCocina, Ranking)
-- Procesa mensajes JSON línea por línea
-- Utiliza patrón Command para ejecutar acciones de negocio
+Este documento describe la implementación del **Servidor Qt TCP** que coordina a todos los actores del sistema Altokepe: Recepcionista, Manager/Chef, Estaciones de Cocina y pantallas de Ranking. El módulo aplica patrones de diseño para desacoplar transporte de negocio, difundir cambios en tiempo real y mantener la coherencia del estado compartido.
 
-**Lógica de Negocio (`LogicaNegocio`)**
-- Singleton que centraliza toda la lógica del sistema
-- Thread-safe mediante mutex
-- Gestiona el menú, pedidos activos y colas de preparación
-- Coordina el flujo completo: desde nuevo pedido hasta entrega
-- Aplica manejo robusto de errores mediante:
-  - Validaciones estrictas de payload
-  - Excepciones controladas (`ErrorLogica`)
-  - Conversión de excepciones a mensajes JSON de error enviados al cliente
-  - Mecanismos de recuperación segura para mantener coherencia del estado
+### Objetivos Cumplidos
+- Conexiones TCP concurrentes con un hilo dedicado por cliente
+- Difusión en tiempo real de cambios de pedidos y ranking
+- Filtrado de broadcasts según el tipo de actor
+- Facade para entregar estados listos para consumir por los clientes
+- Thread-safety en repositorios de menú, pedidos y ranking
 
-## Flujo de Operación
+---
 
-### 1. Nuevo Pedido
-```
-Recepcionista → NUEVO_PEDIDO → LogicaNegocio
-- Genera ID único de pedido
-- Crea instancias de platos
-- Estado: PENDIENTE
-- Notifica a ManagerChef
-```
+## Arquitectura General
 
-### 2. Preparación
-```
-ManagerChef → PREPARAR_PEDIDO → LogicaNegocio
-- Valida orden FIFO (cola)
-- Cambia estado a EN_PROGRESO
-- Distribuye platos a colas por estación
-- Notifica a EstacionCocina
-```
+- **Servidor (`Servidor`)**: acepta conexiones (`incomingConnection`), crea un `ManejadorCliente` por socket y lo mueve a su propio `QThread`.
+- **Manejador de cliente (`ManejadorCliente`)**: lee mensajes JSON delimitados por `\n`, identifica rol vía `IdentificadorCliente` y despacha comandos con `CommandFactory`.
+- **Lógica de negocio (`LogicaNegocio`)**: singleton thread-safe que centraliza menú, pedidos, colas y conteos de ranking; emite respuestas/broadcasts con `enviarRespuesta`.
+- **Repositorios (`repository/`)**: encapsulan persistencia en memoria de menú y pedidos para aislar la lógica del detalle de almacenamiento.
 
-### 3. Cocción
-```
-EstacionCocina → MARCAR_PLATO_TERMINADO → LogicaNegocio
-- Valida que sea el plato en preparación (top de cola)
-- Estado: FINALIZADO
-- Activa siguiente plato en cola
-- Si todos terminaron: Pedido LISTO
-```
+---
 
-### 4. Entrega
-```
-Recepcionista → CONFIRMAR_ENTREGA → LogicaNegocio
-- Valida estado LISTO
-- Marca pedido como ENTREGADO
-- Actualiza ranking de platos
-- Broadcast a pantallas Ranking
+## Patrón Observer
+
+### Definición
+Permite que múltiples observadores sean notificados cuando el sujeto cambia de estado sin acoplarlos directamente.
+
+### Implementación en el Proyecto
+
+#### 1. Subject (Sujeto Observable)
+
+**Clase**: `LogicaNegocio`
+
+**Responsabilidad**: Publicar cada respuesta o broadcast mediante la señal `enviarRespuesta`.
+
+```cpp
+// server/LogicaNegocio.cpp
+emit enviarRespuesta(nullptr, getEstadoParaRanking());
 ```
 
-### 5. Devolución
+#### 2. Observer en el Servidor
+
+**Clase**: `Servidor`
+
+**Responsabilidad**: Conectar la señal con cada `ManejadorCliente` y filtrar broadcasts.
+
+```cpp
+// server/Servidor.cpp
+connect(LogicaNegocio::instance(), &LogicaNegocio::enviarRespuesta, manejador,
+  [manejador](ManejadorCliente* clienteDestino, const QJsonObject& mensaje) {
+    if (clienteDestino == manejador) {
+      manejador->enviarMensaje(mensaje);
+      return;
+    }
+    if (clienteDestino == nullptr &&
+        mensaje.value("evento").toString() == "ACTUALIZACION_RANKING" &&
+        manejador->getTipoActor() == TipoActor::RANKING) {
+      manejador->enviarMensaje(mensaje);
+    }
+  }, Qt::QueuedConnection);
 ```
-ManagerChef → DEVOLVER_PLATO → LogicaNegocio
-- Valida que esté FINALIZADO o ENTREGADO
-- Re-encola con prioridad alta (score × 1.5)
-- Actualiza ranking (decrementa)
-- Notifica a cocina
-```
 
-## Características Clave
+**Explicación**:
+- `nullptr` indica broadcast.
+- Solo clientes `TipoActor::RANKING` reciben el evento `ACTUALIZACION_RANKING`.
+- Las conexiones usan `Qt::QueuedConnection` para respetar los hilos de cada manejador.
 
-### Sistema de Colas con Prioridad
-- Cada estación de cocina tiene su cola de prioridad
-- Ordenamiento por `tiempo_preparacion_estimado`
-- Platos devueltos tienen mayor prioridad
+#### 3. Observer hacia los clientes
 
-### Validaciones Estrictas
-- **FIFO**: Solo se puede preparar el pedido al inicio de la cola
-- **Orden de preparación**: Solo se puede terminar el plato actualmente en preparación
-- **Estados coherentes**: Transiciones de estado validadas
-- **Cancelación**: Solo si no está en preparación activa
+**Clase**: `ManejadorCliente`
 
-### Thread-Safety
-- Mutex protege todas las estructuras compartidas
-- Comunicación entre threads mediante signals de Qt
-- Cada cliente en su propio thread
+**Responsabilidad**: Reenviar el JSON al socket TCP del cliente suscrito.
 
-### Notificaciones en Tiempo Real
-- Broadcast selectivo por tipo de actor
-- Actualizaciones automáticas de ranking
-- Sincronización de estado entre todos los clientes
-
-## Protocolo de Comunicación
-
-Los mensajes siguen el formato JSON:
-```json
-{
-  "evento": "NOMBRE_EVENTO",
-  "data": { ... }
+```cpp
+// server/ManejadorCliente.cpp
+void ManejadorCliente::enviarMensaje(const QJsonObject& obj) {
+    QJsonDocument doc(obj);
+    m_socket->write(doc.toJson(QJsonDocument::Compact));
+    m_socket->write("\n");
 }
 ```
 
-### Eventos Soportados
-- `NUEVO_PEDIDO` - Crear pedido
-- `PREPARAR_PEDIDO` - Iniciar preparación
-- `MARCAR_PLATO_TERMINADO` - Finalizar plato
-- `CONFIRMAR_ENTREGA` - Entregar pedido
-- `DEVOLVER_PLATO` - Devolver plato
-- `CANCELAR_PEDIDO` - Cancelar pedido
-- `OTROS` - Posibles eventos adicionales
+---
 
-## Patrones de Diseño
+## Patrón Facade
 
-- **Singleton**: LogicaNegocio
-- **Command**: Procesamiento de comandos de negocio
-- **Factory**: Creación de comandos e identificadores
-- **Facade**: Interface simplificada para Ranking
-- **Adapter**: Serialización JSON
-- **Repository**: LogicaNegocio
+### Definición
+Ofrece una interfaz simplificada para un subsistema complejo, ocultando pasos internos.
 
+### Implementación en el Proyecto
+
+**Clase**: `LogicaNegocio`
+
+**Método**: `getEstadoParaRanking()`
+
+```cpp
+// server/LogicaNegocio.cpp
+QJsonObject LogicaNegocio::getEstadoParaRanking() {
+    // Combina m_conteoPlatosRanking con m_menu, ordena y serializa a JSON
+    // Retorna { "evento": "ACTUALIZACION_RANKING", "data": { "ranking": [...] } }
+}
+```
+
+**Uso**:
+- `enviarEstadoInicial` entrega el estado inicial al identificarse como Ranking.
+- `registrarVenta` y `notificarActualizacionRanking` reutilizan el Facade para cada broadcast.
+
+---
+
+## Patrón Repository
+
+### Definición
+Separa la lógica de negocio de la fuente de datos ofreciendo una interfaz de colección.
+
+### Implementación en el Proyecto
+
+- **`MenuRepository`**: abstrae el acceso al menú cargado desde JSON. (`server/repository/MenuRepository.*`)
+- **`PedidoRepository`**: gestiona pedidos, colas por estación y conteos de ranking. (`server/repository/PedidoRepository.*`)
+
+**Uso desde `LogicaNegocio`**:
+```cpp
+// server/LogicaNegocio.cpp
+m_menuRepository->cargarMenuDesdeArchivo(path);
+pedidoRepo->registrarEntrega(idPedido);
+```
+
+---
+
+## Patrón Command
+
+### Definición
+Encapsula una solicitud como objeto, desacoplando quién envía la orden de quién la ejecuta.
+
+### Implementación en el Proyecto
+
+- **Fábrica**: `CommandFactory::create` traduce cada JSON en un comando concreto. (`server/patterns/CommandFactory.*`)
+- **Comandos**: `NuevoPedidoCommand`, `PrepararPedidoCommand`, `MarcarPlatoTerminadoCommand`, `ConfirmarEntregaCommand`, etc. (`server/patterns/commands/*`)
+- **Ejecución**: `ManejadorCliente::procesarBuffer` instancia el comando y ejecuta su `run()` contra `LogicaNegocio`.
+
+---
+
+## Implementación del Servidor
+
+1. **Arranque** (`server/main.cpp`)
+   - Inicia `Servidor`, fija puerto y entra en el loop de Qt.
+2. **Aceptación de clientes** (`Servidor::incomingConnection`)
+   - Crea `ManejadorCliente`, lo mueve a `QThread` y conecta la señal `enviarRespuesta`.
+3. **Identificación** (`ManejadorCliente::procesarBuffer`)
+   - Valida `IDENTIFICARSE` con `IdentificadorCliente`; si es válido, llama `LogicaNegocio::enviarEstadoInicial`.
+4. **Ciclo de comandos**
+   - Cada mensaje posterior se convierte en comando y se atiende en `LogicaNegocio` (`procesarNuevoPedido`, `procesarPrepararPedido`, `procesarMarcarPlatoTerminado`, `procesarConfirmarEntrega`, etc.).
+5. **Actualizaciones en tiempo real**
+   - Cambios de estado emiten `enviarRespuesta`; si `clienteDestino == nullptr`, el `Servidor` filtra por rol antes de reenviar.
+
+---
+
+## Protocolo de Comunicación
+
+- **Transporte**: JSON delimitado por `\n` sobre TCP.
+- **Identificación**: `{"comando":"IDENTIFICARSE", "rol":"Ranking"|"Recepcionista"|"ManagerChef"|"Estacion", ...}`.
+- **Eventos**: respuestas usan `"evento"` y `"data"` con el payload. Ejemplo de ranking:
+
+```json
+{
+  "evento": "ACTUALIZACION_RANKING",
+  "data": {
+    "ranking": [
+      { "nombre": "Aalopuri", "cantidad": 15 },
+      { "nombre": "Vadapav", "cantidad": 12 }
+    ]
+  }
+}
+```
+
+---
+
+## Decisiones de Diseño
+
+1. **Thread-safety explícito**: `LogicaNegocio` protege secciones críticas con `std::mutex` y libera el lock antes de emitir señales.
+2. **Broadcast conservador**: solo eventos conocidos se envían a roles autorizados; evita que otros actores reciban datos irrelevantes.
+3. **Facade reutilizable**: un único método construye el estado de ranking para inicialización y notificaciones, reduciendo duplicación.
+4. **Hilos por cliente**: cada `QTcpSocket` vive en su propio `QThread` para no bloquear el loop principal del servidor.
+
+---
+
+## Diagrama de Secuencia
+
+```mermaid
+sequenceDiagram
+    participant C as Cliente TCP
+    participant S as Servidor
+    participant LN as LogicaNegocio
+    participant MC as ManejadorCliente
+
+    C->>S: Conexión TCP
+    S->>MC: Crear manejador y mover a QThread
+    MC->>LN: IDENTIFICARSE
+    LN-->>MC: enviarEstadoInicial
+    MC-->>C: Respuesta inicial
+
+    C->>MC: comando (ej. CONFIRMAR_ENTREGA)
+    MC->>LN: procesarConfirmarEntrega
+    LN->>LN: actualizar conteos y pedidos
+    LN-->>MC: enviarRespuesta(nullptr, ranking)
+    MC-->>C: ACTUALIZACION_RANKING
+```
+
+---
+
+## Conclusiones
+
+- El servidor gestiona múltiples actores mediante TCP y aplica **Observer**, **Facade**, **Repository** y **Command** para desacoplar responsabilidades.
+- Los broadcasts se filtran por rol, garantizando que cada cliente reciba solo la información relevante.
+- El diseño thread-safe y los repositorios centralizados mantienen la coherencia del estado entre conexiones concurrentes.
