@@ -1,0 +1,32 @@
+from rest_framework import viewsets, filters
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from .models import Receta
+from .serializers import RecetaSerializer, RecetaListSerializer
+
+class RecetaViewSet(viewsets.ModelViewSet):
+    queryset = Receta.objects.all().select_related('cliCod', 'usuCod', 'sucurCod')
+    serializer_class = RecetaSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    
+    search_fields = [
+        'receCod',
+        'cliCod__cli_nombre',
+        'cliCod__cli_apellido',
+        'cliCod__cli_dni',
+        'usuCod__first_name',
+        'usuCod__last_name',
+        'receTipoLent',
+        'sucurCod__sucurNom',
+    ]
+    
+    filterset_fields = ['receEstado', 'receTipoLent', 'cliCod', 'usuCod', 'sucurCod']
+
+    ordering_fields = ['receFech', 'receCod', 'receEstado']
+    ordering = ['-receFech'] 
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return RecetaListSerializer
+        return RecetaSerializer
