@@ -8,6 +8,7 @@ import SearchInput from "../../../../components/Common/SearchInput";
 import api from "../../../../auth/services/api";
 import type { Client } from "../../../../services/clientService";
 import type { Recipe } from "../../../../types/recipe";
+import { useAuth } from "../../../../auth/hooks/useAuth";
 
 interface RecetaFormProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
   // -----------------------------
   // Estados principales
   // -----------------------------
+
+  const { user } = useAuth();
 
   const [paciente, setPaciente] = useState<Client | null>(null);
 
@@ -175,6 +178,31 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     if (!fecha) return "";
     const nacimiento = new Date(fecha);
     return new Date().getFullYear() - nacimiento.getFullYear();
+  };
+
+  const optometraPorDefecto = {
+    nombre: "Dr. Viddes Maqueyra Velarde",
+    cargo: "Médico Oftalmólogo",
+    cmp: "41792",
+    rne: "31403",
+  };
+
+  const esOptometraActivo = user?.roles?.some((rol) => rol.rolNom === "OPTOMETRA");
+
+  const datosOptometra = {
+    nombre: esOptometraActivo && user?.usuNombreCom ? user.usuNombreCom : optometraPorDefecto.nombre,
+    cargo:
+      esOptometraActivo && user?.optometra?.optCargo
+        ? user.optometra.optCargo
+        : optometraPorDefecto.cargo,
+    cmp:
+      esOptometraActivo && user?.optometra?.optCMP
+        ? user.optometra.optCMP
+        : optometraPorDefecto.cmp,
+    rne:
+      esOptometraActivo && user?.optometra?.optRNE
+        ? user.optometra.optRNE
+        : optometraPorDefecto.rne,
   };
 
   return (
@@ -430,9 +458,11 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
           {/* Firma */}
           <div className="mt-8 text-center text-sm">
-            <strong>Dr. Viddes Maqueyra Velarde</strong>
-            <p>Médico Oftalmólogo</p>
-            <p>CMP: 41792 - RNE: 31403</p>
+            <strong>{datosOptometra.nombre}</strong>
+            <p>{datosOptometra.cargo}</p>
+            <p>
+              CMP: {datosOptometra.cmp} - RNE: {datosOptometra.rne}
+            </p>
           </div>
         </div>
       </form>

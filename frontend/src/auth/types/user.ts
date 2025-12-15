@@ -31,10 +31,15 @@ export interface User {
   usuEstado: boolean;
   roles: Role[]; // ManyToMany  arreglo de roles
   sucurCod?: number;  //Puede ser null
-  sucursal?: {      
+  sucursal?: {
     sucurCod: number;
     sucurNom: string;
   };
+  optometra?: {
+    optCargo: string;
+    optCMP: string;
+    optRNE: string;
+  } | null;
 }
 
 export interface TokenResponse {
