@@ -28,7 +28,7 @@ class RecetaSerializer(serializers.ModelSerializer):
     
     def get_optometra_nombre(self, obj):
         if obj.usuCod:
-            return f"{obj.usuCod.first_name} {obj.usuCod.last_name}"
+            return obj.usuCod.usuNombreCom
         return None
     
     def get_sucursal_nombre(self, obj):
@@ -54,7 +54,7 @@ class RecetaListSerializer(serializers.ModelSerializer):
     
     def get_optometra_nombre(self, obj):
         if obj.usuCod:
-            return f"{obj.usuCod.first_name} {obj.usuCod.last_name}"
+            return obj.usuCod.usuNombreCom
         return None
     
     
