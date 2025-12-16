@@ -25,6 +25,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
   const [formData, setFormData] = useState({
     dni: "",
+    tipoDoc: "DNI",
     nombre: "",
     fecha_nac: "",
     telefono: "",
@@ -63,13 +64,20 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
   // Buscar paciente por DNI
   const buscarPaciente = async () => {
-    if (formData.dni.trim().length < 8) return;
+    const docValue = formData.dni.trim();
+    const isDni = formData.tipoDoc === "DNI";
+
+    if (isDni && !/^\d{8}$/.test(docValue)) return;
+    if (!isDni && docValue.length < 9) return;
 
     try {
-      const response = await api.get(`/clients/?search=${formData.dni}`);
-      const data = response.data?.data || response.data;
+      const response = await api.get(`/clients/`, {
+        params: { search: docValue, tipo_doc: formData.tipoDoc },
+      });
+      const data =
+        response.data?.results || response.data?.data || response.data;
 
-      if (data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         const cli = data[0];
         setPaciente(cli);
 
@@ -89,7 +97,9 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
   // Manejo de inputs generales
   // --------------------------------------------------
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
@@ -155,6 +165,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     setPaciente(null);
     setFormData({
       dni: "",
+      tipoDoc: "DNI",
       nombre: "",
       fecha_nac: "",
       telefono: "",
@@ -229,12 +240,27 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
             {/* DNI + botón buscar */}
             <div className="flex items-end gap-2">
+              <div className="w-28">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo
+                </label>
+                <select
+                  name="tipoDoc"
+                  value={formData.tipoDoc}
+                  onChange={handleChange}
+                  className="w-full h-11 border rounded-lg px-2"
+                >
+                  <option value="DNI">DNI</option>
+                  <option value="CE">Carnet de extranjería</option>
+                </select>
+              </div>
+
               <FormInput
-                label="DNI del Paciente"
+                label="Documento del Paciente"
                 name="dni"
                 value={formData.dni}
                 onChange={handleChange}
-                maxLength={8}
+                maxLength={formData.tipoDoc === "DNI" ? 8 : 12}
                 required
               />
 
