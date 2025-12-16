@@ -239,8 +239,8 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
             <h2 className="text-xl font-semibold text-blue-600 mb-3">Datos del Paciente</h2>
 
             {/* DNI + botón buscar */}
-            <div className="flex items-end gap-2">
-              <div className="w-28">
+            <div className="grid grid-cols-[110px,1fr,auto] gap-3 items-end">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tipo
                 </label>
@@ -255,14 +255,20 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
                 </select>
               </div>
 
-              <FormInput
-                label="Documento del Paciente"
-                name="dni"
-                value={formData.dni}
-                onChange={handleChange}
-                maxLength={formData.tipoDoc === "DNI" ? 8 : 12}
-                required
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Documento del Paciente
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <input
+                  name="dni"
+                  value={formData.dni}
+                  onChange={handleChange}
+                  maxLength={formData.tipoDoc === "DNI" ? 8 : 12}
+                  required
+                  className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
 
               <button
                 type="button"
