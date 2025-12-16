@@ -1,5 +1,9 @@
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from .models import User, Role,OptometraUser
+from django.contrib.auth import authenticate
+from .models import User
 
 from Branch.models import Branch
 
@@ -76,6 +80,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         roles_data = validated_data.pop('roles', None)
+        optometra_data = validated_data.pop('optometra', None)
         password = validated_data.pop('usuContra', None)
 
         for attr, value in validated_data.items():
@@ -85,6 +90,15 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         instance.save()
+
+        if optometra_data is not None:
+            try:
+                optometra = instance.optometra
+                for attr, value in optometra_data.items():
+                    setattr(optometra, attr, value)
+                optometra.save()
+            except ObjectDoesNotExist:
+                OptometraUser.objects.create(user=instance, **optometra_data)
 
         # Actualización de roles
         if instance.is_staff or getattr(instance, 'is_superuser', False):
@@ -99,16 +113,17 @@ class UserSerializer(serializers.ModelSerializer):
         representation['roles'] = RoleSerializer(instance.roles.all(), many=True).data
         
         # Agregar los datos de optometra si existen
-        if hasattr(instance, 'optometra'):
+        try:
             representation['optometra'] = OptometraUserSerializer(instance.optometra).data
-        else:
-            representation['optometra'] = None  
+        except ObjectDoesNotExist:
+            representation['optometra'] = None
         return representation
-    
+
 class CurrentUserSerializer(serializers.ModelSerializer):
     roles = RoleSerializer(many=True, read_only=True)
     password = serializers.CharField(default='', read_only=True)  # Frontend lo requiere vacío
     sucursal = serializers.SerializerMethodField()
+    optometra = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -124,8 +139,9 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             'roles',
             'sucurCod',
             'sucursal',
+            'optometra',
         ]
-    
+
     def get_sucursal(self, obj):
         if obj.sucurCod:
             return {
@@ -133,4 +149,42 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                 'sucurNom': obj.sucurCod.sucurNom,
             }
         return None
+
+    def get_optometra(self, obj):
+        try:
+            return OptometraUserSerializer(obj.optometra).data
+        except ObjectDoesNotExist:
+            return None
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    usuNom = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        usuNom = attrs.get("usuNom")
+        password = attrs.get("password")
+
+        user = authenticate(
+            username=usuNom,
+            password=password
+        )
+
+        if user is None:
+            raise serializers.ValidationError("Credenciales inválidas")
+
+        if not user.is_active:
+            raise serializers.ValidationError("Usuario inactivo")
+
+        data = super().validate({
+            "username": usuNom,
+            "password": password
+        })
+
+        data["user"] = {
+            "usuCod": user.usuCod,
+            "usuNom": user.usuNom,
+            "usuEmail": user.usuEmail
+        }
+
+        return data
 

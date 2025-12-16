@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Receta
 from .serializers import RecetaSerializer, RecetaListSerializer
+from rest_framework.permissions import IsAuthenticated
+from User.permissions import Nivel4Permission as IsOptometra
 
 class RecetaViewSet(viewsets.ModelViewSet):
     queryset = Receta.objects.all().select_related('cliCod', 'usuCod', 'sucurCod')
@@ -30,3 +32,9 @@ class RecetaViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return RecetaListSerializer
         return RecetaSerializer
+    
+    permission_classes = [IsAuthenticated, IsOptometra]
+
+    def perform_create(self, serializer):
+        serializer.save(usuCod=self.request.user)
+

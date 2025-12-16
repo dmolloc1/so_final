@@ -1,4 +1,3 @@
-// Opciones de Roles
 export type RolNombre =
   | 'GERENTE'
   | 'CAJERO'
@@ -29,12 +28,17 @@ export interface User {
   usuTel: string;
   usuEmail: string;
   usuEstado: boolean;
-  roles: Role[]; // ManyToMany  arreglo de roles
-  sucurCod?: number;  //Puede ser null
-  sucursal?: {      
+  roles: Role[]; 
+  sucurCod?: number;  
+  sucursal?: {
     sucurCod: number;
     sucurNom: string;
   };
+  optometra?: {
+    optCargo: string;
+    optCMP: string;
+    optRNE: string;
+  } | null;
 }
 
 export interface TokenResponse {

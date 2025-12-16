@@ -4,11 +4,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import authenticate, login, logout
 from .models import User
-from .serializers import UserSerializer, CurrentUserSerializer
+from .serializers import UserSerializer, CurrentUserSerializer, CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_exempt
 from .permissions import Nivel1Permission
+from rest_framework_simplejwt.views import TokenObtainPairView
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by('usuCod')

@@ -8,6 +8,7 @@ import SearchInput from "../../../../components/Common/SearchInput";
 import api from "../../../../auth/services/api";
 import type { Client } from "../../../../services/clientService";
 import type { Recipe } from "../../../../types/recipe";
+import { useAuth } from "../../../../auth/hooks/useAuth";
 
 interface RecetaFormProps {
   isOpen: boolean;
@@ -16,9 +17,9 @@ interface RecetaFormProps {
 }
 
 export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProps) {
-  // -----------------------------
   // Estados principales
-  // -----------------------------
+
+  const { user } = useAuth();
 
   const [paciente, setPaciente] = useState<Client | null>(null);
 
@@ -58,9 +59,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
   const [loading, setLoading] = useState(false);
 
-  // --------------------------------------------------
   // Buscar paciente por DNI
-  // --------------------------------------------------
   const buscarPaciente = async () => {
     if (formData.dni.trim().length < 8) return;
 
@@ -109,9 +108,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     });
   };
 
-  // --------------------------------------------------
   // Enviar receta al backend
-  // --------------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -123,7 +120,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     setLoading(true);
     try {
       await onSubmit({
-        cli_cod: paciente.cli_cod,
+        cliCod: paciente.cli_cod,
         receObserva: formData.observaciones,
         receTipoLent: "Mixto",
         receEstado: "Activo",
@@ -168,22 +165,43 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     onClose();
   };
 
-  // -----------------------------
   // Vista previa - cálculos
-  // -----------------------------
   const calcularEdad = (fecha: string) => {
     if (!fecha) return "";
     const nacimiento = new Date(fecha);
     return new Date().getFullYear() - nacimiento.getFullYear();
   };
 
+  const optometraPorDefecto = {
+    nombre: "Dr. Viddes Maqueyra Velarde",
+    cargo: "Médico Oftalmólogo",
+    cmp: "41792",
+    rne: "31403",
+  };
+
+  const esOptometraActivo = user?.roles?.some((rol) => rol.rolNom === "OPTOMETRA");
+
+  const datosOptometra = {
+    nombre: esOptometraActivo && user?.usuNombreCom ? user.usuNombreCom : optometraPorDefecto.nombre,
+    cargo:
+      esOptometraActivo && user?.optometra?.optCargo
+        ? user.optometra.optCargo
+        : optometraPorDefecto.cargo,
+    cmp:
+      esOptometraActivo && user?.optometra?.optCMP
+        ? user.optometra.optCMP
+        : optometraPorDefecto.cmp,
+    rne:
+      esOptometraActivo && user?.optometra?.optRNE
+        ? user.optometra.optRNE
+        : optometraPorDefecto.rne,
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Nueva Receta" size="xl">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* ---------------------------------------
-         IZQUIERDA: FORMULARIO
-        ---------------------------------------- */}
+        {/* IZQUIERDA */}
         <div className="space-y-6">
 
           {/* DATOS DEL PACIENTE */}
@@ -347,9 +365,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
           </div>
         </div>
 
-        {/* ---------------------------------------
-         DERECHA: PREVISUALIZACIÓN
-        ---------------------------------------- */}
+        {/* DERECHA*/}
         <div className="border rounded-lg p-6 shadow-sm bg-gray-50">
           <h2 className="text-xl font-bold text-center mb-4">
             Previsualización de Receta
@@ -430,9 +446,11 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
           {/* Firma */}
           <div className="mt-8 text-center text-sm">
-            <strong>Dr. Viddes Maqueyra Velarde</strong>
-            <p>Médico Oftalmólogo</p>
-            <p>CMP: 41792 - RNE: 31403</p>
+            <strong>{datosOptometra.nombre}</strong>
+            <p>{datosOptometra.cargo}</p>
+            <p>
+              CMP: {datosOptometra.cmp} - RNE: {datosOptometra.rne}
+            </p>
           </div>
         </div>
       </form>

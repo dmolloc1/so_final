@@ -19,7 +19,7 @@ class RecetaSerializer(serializers.ModelSerializer):
             'cliCod', 'usuCod', 'sucurCod',
             'cliente_nombre', 'optometra_nombre', 'sucursal_nombre'
         ]
-        read_only_fields = ['receCod', 'receRegistro']
+        read_only_fields = ['receCod', 'receRegistro','usuCod']
     
     def get_cliente_nombre(self, obj):
         if obj.cliCod:
@@ -56,3 +56,5 @@ class RecetaListSerializer(serializers.ModelSerializer):
         if obj.usuCod:
             return f"{obj.usuCod.first_name} {obj.usuCod.last_name}"
         return None
+    
+    
