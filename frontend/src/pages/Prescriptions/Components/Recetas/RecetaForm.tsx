@@ -25,9 +25,12 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
   const [formData, setFormData] = useState({
     dni: "",
+    tipoDoc: "DNI",
     nombre: "",
     fecha_nac: "",
     telefono: "",
+    receTipoLent: "Mixto",
+    distPupilar: "",
 
     // Lejos
     lejos_od_esf: "",
@@ -61,13 +64,20 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
   // Buscar paciente por DNI
   const buscarPaciente = async () => {
-    if (formData.dni.trim().length < 8) return;
+    const docValue = formData.dni.trim();
+    const isDni = formData.tipoDoc === "DNI";
+
+    if (isDni && !/^\d{8}$/.test(docValue)) return;
+    if (!isDni && docValue.length < 9) return;
 
     try {
-      const response = await api.get(`/clients/?search=${formData.dni}`);
-      const data = response.data?.data || response.data;
+      const response = await api.get(`/clients/`, {
+        params: { search: docValue, tipo_doc: formData.tipoDoc },
+      });
+      const data =
+        response.data?.results || response.data?.data || response.data;
 
-      if (data.length > 0) {
+      if (Array.isArray(data) && data.length > 0) {
         const cli = data[0];
         setPaciente(cli);
 
@@ -87,7 +97,9 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
   // Manejo de inputs generales
   // --------------------------------------------------
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
@@ -119,12 +131,27 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
     setLoading(true);
     try {
+      const distPupilar =
+        formData.distPupilar ||
+        formData.lejos_od_dip ||
+        formData.lejos_oi_dip ||
+        formData.cerca_od_add;
+
       await onSubmit({
         cliCod: paciente.cli_cod,
-        receObserva: formData.observaciones,
-        receTipoLent: "Mixto",
+        receFech: new Date().toISOString().split("T")[0],
+        receObserva: formData.observaciones || undefined,
+        receTipoLent: formData.receTipoLent,
         receEstado: "Activo",
-        // Aquí mapeas los campos específicos según tu backend
+        receEsfeD: formData.lejos_od_esf || "0",
+        receCilinD: formData.lejos_od_cil || "0",
+        receEjeD: Number(formData.lejos_od_eje || 0),
+        receEsfel: formData.lejos_oi_esf || "0",
+        receCilinl: formData.lejos_oi_cil || "0",
+        receEjel: Number(formData.lejos_oi_eje || 0),
+        receDistPupilar: distPupilar || "0",
+        sucurCod: user?.sucurCod,
+        usuCod: esOptometraActivo ? user?.usuCod ?? null : null,
       });
 
       handleClose();
@@ -138,9 +165,12 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     setPaciente(null);
     setFormData({
       dni: "",
+      tipoDoc: "DNI",
       nombre: "",
       fecha_nac: "",
       telefono: "",
+      receTipoLent: "Mixto",
+      distPupilar: "",
       lejos_od_esf: "",
       lejos_od_cil: "",
       lejos_od_eje: "",
@@ -209,15 +239,36 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
             <h2 className="text-xl font-semibold text-blue-600 mb-3">Datos del Paciente</h2>
 
             {/* DNI + botón buscar */}
-            <div className="flex items-end gap-2">
-              <FormInput
-                label="DNI del Paciente"
-                name="dni"
-                value={formData.dni}
-                onChange={handleChange}
-                maxLength={8}
-                required
-              />
+            <div className="grid grid-cols-[110px,1fr,auto] gap-3 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo
+                </label>
+                <select
+                  name="tipoDoc"
+                  value={formData.tipoDoc}
+                  onChange={handleChange}
+                  className="w-full h-11 border rounded-lg px-2"
+                >
+                  <option value="DNI">DNI</option>
+                  <option value="CE">Carnet de extranjería</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Documento del Paciente
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <input
+                  name="dni"
+                  value={formData.dni}
+                  onChange={handleChange}
+                  maxLength={formData.tipoDoc === "DNI" ? 8 : 12}
+                  required
+                  className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
 
               <button
                 type="button"
@@ -258,6 +309,24 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
           {/* MEDICIÓN DE VISTA */}
           <div>
             <h2 className="text-xl font-semibold text-blue-600 mb-3">Medición de Vista</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <FormInput
+                label="Tipo de lente"
+                name="receTipoLent"
+                value={formData.receTipoLent}
+                onChange={handleChange}
+                placeholder="Mixto"
+              />
+
+              <FormInput
+                label="Distancia Pupilar"
+                name="distPupilar"
+                value={formData.distPupilar}
+                onChange={handleChange}
+                placeholder="DIP"
+              />
+            </div>
 
             {/* LEJOS */}
             <fieldset className="border p-3 rounded-lg mb-4">
@@ -380,6 +449,12 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
             <p><strong>Paciente:</strong> {formData.nombre || "—"}</p>
             <p><strong>Edad:</strong> {calcularEdad(formData.fecha_nac) || "—"}</p>
             <p><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
+            <p>
+              <strong>Tipo de lente:</strong> {formData.receTipoLent || "Mixto"}
+            </p>
+            <p>
+              <strong>Distancia pupilar:</strong> {formData.distPupilar || "—"}
+            </p>
           </div>
 
           {/* TABLA LEJOS */}
