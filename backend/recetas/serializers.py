@@ -23,12 +23,12 @@ class RecetaSerializer(serializers.ModelSerializer):
     
     def get_cliente_nombre(self, obj):
         if obj.cliCod:
-            return f"{obj.cliCod.cli_nombre} {obj.cliCod.cli_apellido}"
+            return f"{obj.cliCod.cliNombre} {obj.cliCod.cliApellido}"
         return None
     
     def get_optometra_nombre(self, obj):
         if obj.usuCod:
-            return f"{obj.usuCod.first_name} {obj.usuCod.last_name}"
+            return obj.usuCod.usuNombreCom
         return None
     
     def get_sucursal_nombre(self, obj):
@@ -49,12 +49,12 @@ class RecetaListSerializer(serializers.ModelSerializer):
     
     def get_cliente_nombre(self, obj):
         if obj.cliCod:
-            return f"{obj.cliCod.cli_nombre} {obj.cliCod.cli_apellido}"
+            return f"{obj.cliCod.cliNombre} {obj.cliCod.cliApellido}"
         return None
     
     def get_optometra_nombre(self, obj):
         if obj.usuCod:
-            return f"{obj.usuCod.first_name} {obj.usuCod.last_name}"
+            return obj.usuCod.usuNombreCom
         return None
     
     

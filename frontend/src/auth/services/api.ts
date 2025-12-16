@@ -47,28 +47,33 @@ api.interceptors.request.use(
       if (userStr) {
         const user = JSON.parse(userStr);
 
+        // Extraer sucursal desde cualquier forma disponible en el usuario
+        const branchCode =
+          user.sucurCod ??
+          user.sucursal?.sucurCod ??
+          Number(localStorage.getItem('sucursal')) || undefined;
 
         //OJO LISTA PARA ENDPOINTS QUE REQUIEREN SUCURSAL menos inventario que es independiente
-        const endpointsWithBranchParam = ['/user/', '/user/list/', '/cash/', '/cash/opening', '/clients/', '/client/list/', '/recipes/', '/recipes/list/'];
-        //OJO 
+        const endpointsWithBranchParam = ['/user/', '/user/list/', '/cash/', '/cash/opening', '/clients/', '/client/list/', '/recetas/', '/recetas/list/', '/recipes/', '/recipes/list/'];
+        //OJO
 
 
         const needsBranchParam = endpointsWithBranchParam.some(endpoint =>
           config.url?.includes(endpoint)
         );
 
-        if (config.method === 'get' && user.sucurCod && needsBranchParam) {
+        if (config.method === 'get' && branchCode && needsBranchParam) {
           config.params = {
             ...config.params,
-            branch: user.sucurCod,
+            branch: branchCode,
           };
         }
 
-        if (['post', 'put', 'patch'].includes(config.method || '') && user.sucurCod) {
+        if (['post', 'put', 'patch'].includes(config.method || '') && branchCode) {
           if (config.data && typeof config.data === 'object' && !config.data.sucurCod) {
             config.data = {
               ...config.data,
-              sucurCod: user.sucurCod,
+              sucurCod: branchCode,
             };
           }
         }

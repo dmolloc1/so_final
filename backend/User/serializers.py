@@ -7,6 +7,10 @@ from .models import User
 
 from Branch.models import Branch
 
+
+def _has_optometra_role(roles):
+    return any(getattr(role, 'rolNom', '') == 'OPTOMETRA' for role in roles)
+
 # Serializer para leer roles (devuelve objetos completos)
 class RoleSerializer(serializers.ModelSerializer):
     rolCod = serializers.IntegerField(source='id', read_only=True)
@@ -50,8 +54,34 @@ class UserSerializer(serializers.ModelSerializer):
             'usuEstado',
             'roles',
             'sucurCod',
-            'optometra', 
+            'optometra',
         ]
+
+    def validate(self, attrs):
+        roles = attrs.get('roles')
+        optometra_data = attrs.get('optometra')
+
+        if roles is None and self.instance:
+            roles = self.instance.roles.all()
+
+        requires_optometra = roles and _has_optometra_role(roles)
+        has_optometra_profile = bool(self.instance and hasattr(self.instance, 'optometra'))
+
+        if requires_optometra:
+            if optometra_data is None:
+                if not has_optometra_profile:
+                    raise serializers.ValidationError({
+                        'optometra': 'Los datos del optómetra son obligatorios para usuarios con rol OPTOMETRA.'
+                    })
+            else:
+                required_fields = ['optCargo', 'optCMP', 'optRNE']
+                missing = [field for field in required_fields if not optometra_data.get(field)]
+                if missing:
+                    raise serializers.ValidationError({
+                        'optometra': f'Campos requeridos: {", ".join(missing)}.'
+                    })
+
+        return attrs
 
     def create(self, validated_data):
         roles_data = validated_data.pop('roles', [])

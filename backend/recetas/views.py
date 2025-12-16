@@ -14,9 +14,9 @@ class RecetaViewSet(viewsets.ModelViewSet):
     
     search_fields = [
         'receCod',
-        'cliCod__cli_nombre',
-        'cliCod__cli_apellido',
-        'cliCod__cli_dni',
+        'cliCod__cliNombre',
+        'cliCod__cliApellido',
+        'cliCod__cliNumDoc',
         'usuCod__first_name',
         'usuCod__last_name',
         'receTipoLent',
@@ -36,5 +36,8 @@ class RecetaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsOptometra]
 
     def perform_create(self, serializer):
-        serializer.save(usuCod=self.request.user)
+        # Fill in branch automatically when it is omitted so we avoid DB errors
+        # when the client forgets to send it.
+        sucur = serializer.validated_data.get('sucurCod') or getattr(self.request.user, 'sucurCod', None)
+        serializer.save(usuCod=self.request.user, sucurCod=sucur)
 
