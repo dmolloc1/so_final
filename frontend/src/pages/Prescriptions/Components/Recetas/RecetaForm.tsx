@@ -28,6 +28,8 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     nombre: "",
     fecha_nac: "",
     telefono: "",
+    receTipoLent: "Mixto",
+    distPupilar: "",
 
     // Lejos
     lejos_od_esf: "",
@@ -119,12 +121,27 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
     setLoading(true);
     try {
+      const distPupilar =
+        formData.distPupilar ||
+        formData.lejos_od_dip ||
+        formData.lejos_oi_dip ||
+        formData.cerca_od_add;
+
       await onSubmit({
         cliCod: paciente.cli_cod,
-        receObserva: formData.observaciones,
-        receTipoLent: "Mixto",
+        receFech: new Date().toISOString().split("T")[0],
+        receObserva: formData.observaciones || undefined,
+        receTipoLent: formData.receTipoLent,
         receEstado: "Activo",
-        // Aquí mapeas los campos específicos según tu backend
+        receEsfeD: formData.lejos_od_esf || "0",
+        receCilinD: formData.lejos_od_cil || "0",
+        receEjeD: Number(formData.lejos_od_eje || 0),
+        receEsfel: formData.lejos_oi_esf || "0",
+        receCilinl: formData.lejos_oi_cil || "0",
+        receEjel: Number(formData.lejos_oi_eje || 0),
+        receDistPupilar: distPupilar || "0",
+        sucurCod: user?.sucurCod,
+        usuCod: esOptometraActivo ? user?.usuCod ?? null : null,
       });
 
       handleClose();
@@ -141,6 +158,8 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
       nombre: "",
       fecha_nac: "",
       telefono: "",
+      receTipoLent: "Mixto",
+      distPupilar: "",
       lejos_od_esf: "",
       lejos_od_cil: "",
       lejos_od_eje: "",
@@ -258,6 +277,24 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
           {/* MEDICIÓN DE VISTA */}
           <div>
             <h2 className="text-xl font-semibold text-blue-600 mb-3">Medición de Vista</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <FormInput
+                label="Tipo de lente"
+                name="receTipoLent"
+                value={formData.receTipoLent}
+                onChange={handleChange}
+                placeholder="Mixto"
+              />
+
+              <FormInput
+                label="Distancia Pupilar"
+                name="distPupilar"
+                value={formData.distPupilar}
+                onChange={handleChange}
+                placeholder="DIP"
+              />
+            </div>
 
             {/* LEJOS */}
             <fieldset className="border p-3 rounded-lg mb-4">
@@ -380,6 +417,12 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
             <p><strong>Paciente:</strong> {formData.nombre || "—"}</p>
             <p><strong>Edad:</strong> {calcularEdad(formData.fecha_nac) || "—"}</p>
             <p><strong>Fecha:</strong> {new Date().toLocaleDateString()}</p>
+            <p>
+              <strong>Tipo de lente:</strong> {formData.receTipoLent || "Mixto"}
+            </p>
+            <p>
+              <strong>Distancia pupilar:</strong> {formData.distPupilar || "—"}
+            </p>
           </div>
 
           {/* TABLA LEJOS */}
