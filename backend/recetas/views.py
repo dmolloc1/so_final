@@ -14,9 +14,9 @@ class RecetaViewSet(viewsets.ModelViewSet):
     
     search_fields = [
         'receCod',
-        'cliCod__cli_nombre',
-        'cliCod__cli_apellido',
-        'cliCod__cli_dni',
+        'cliCod__cliNombre',
+        'cliCod__cliApellido',
+        'cliCod__cliNumDoc',
         'usuCod__first_name',
         'usuCod__last_name',
         'receTipoLent',
