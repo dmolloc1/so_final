@@ -22,6 +22,8 @@ export interface Recipe {
   sucurCod: number;
 
   cliente_nombre?: string;
+  cliente_documento?: string;
+  cliente_tipo_doc?: string;
   optometra_nombre?: string;
   sucursal_nombre?: string;
 }

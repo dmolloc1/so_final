@@ -101,8 +101,8 @@ export default function RecetasPage() {
     },
     {
       key: "cliCod",
-      label: "DNI Cliente",
-      render: (row: Recipe) => row.cliCod?.cli_dni || "—",
+      label: "Documento Cliente",
+      render: (row: Recipe) => row.cliente_documento || "—",
     },
     {
       key: "cliente_nombre",
@@ -150,7 +150,7 @@ export default function RecetasPage() {
         <SearchInput
           value={searchTerm}
           onChange={setSearchTerm}
-          placeholder="DNI"
+          placeholder="Documento (DNI o CE)"
         />
 
         {/* SUCURSALES */}
