@@ -13,12 +13,13 @@ class RecetaViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     
     search_fields = [
-        'receCod',
+        '=receCod',
         'cliCod__cliNombre',
         'cliCod__cliApellido',
         'cliCod__cliNumDoc',
-        'usuCod__first_name',
-        'usuCod__last_name',
+        'cliCod__cliTipoDoc',
+        'usuCod__usuNombreCom',
+        'usuCod__usuNom',
         'receTipoLent',
         'sucurCod__sucurNom',
     ]
@@ -26,7 +27,20 @@ class RecetaViewSet(viewsets.ModelViewSet):
     filterset_fields = ['receEstado', 'receTipoLent', 'cliCod', 'usuCod', 'sucurCod']
 
     ordering_fields = ['receFech', 'receCod', 'receEstado']
-    ordering = ['-receFech'] 
+    ordering = ['-receFech']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        branch = self.request.query_params.get('branch')
+        if branch:
+            queryset = queryset.filter(sucurCod_id=branch)
+
+        cli_cod = self.request.query_params.get('cli_cod')
+        if cli_cod:
+            queryset = queryset.filter(cliCod_id=cli_cod)
+
+        return queryset
     
     def get_serializer_class(self):
         if self.action == 'list':
