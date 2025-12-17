@@ -32,9 +32,9 @@ class RecetaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        branch = self.request.query_params.get('branch') or self.request.query_params.get('sucurCod')
-        if branch:
-            queryset = queryset.filter(sucurCod_id=branch)
+        sucur_cod = self.request.query_params.get('sucurCod') or self.request.query_params.get('branch')
+        if sucur_cod:
+            queryset = queryset.filter(sucurCod_id=sucur_cod)
 
         cli_cod = self.request.query_params.get('cliCod') or self.request.query_params.get('cli_cod')
         if cli_cod:

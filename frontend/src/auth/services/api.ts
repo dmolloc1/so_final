@@ -65,15 +65,23 @@ api.interceptors.request.use(
         if (config.method === 'get' && branchCode && needsBranchParam) {
           const currentParams = config.params;
 
-          if (currentParams instanceof URLSearchParams) {
-            const updatedParams = new URLSearchParams(currentParams);
-            updatedParams.set('branch', String(branchCode));
-            config.params = updatedParams;
-          } else {
-            config.params = {
-              ...currentParams,
-              branch: branchCode,
-            };
+          const hasExplicitBranch =
+            (currentParams instanceof URLSearchParams &&
+              (currentParams.has('branch') || currentParams.has('sucurCod')))
+            || (!!currentParams && typeof currentParams === 'object' &&
+              ('branch' in currentParams || 'sucurCod' in currentParams));
+
+          if (!hasExplicitBranch) {
+            if (currentParams instanceof URLSearchParams) {
+              const updatedParams = new URLSearchParams(currentParams);
+              updatedParams.set('branch', String(branchCode));
+              config.params = updatedParams;
+            } else {
+              config.params = {
+                ...currentParams,
+                branch: branchCode,
+              };
+            }
           }
         }
 
