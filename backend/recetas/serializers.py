@@ -26,17 +26,17 @@ class RecetaSerializer(serializers.ModelSerializer):
 
     def get_cliente_nombre(self, obj):
         if obj.cliCod:
-            return f"{obj.cliCod.cli_nombre} {obj.cliCod.cli_apellido}"
+            return f"{obj.cliCod.cliNombre} {obj.cliCod.cliApellido}"
         return None
 
     def get_cliente_documento(self, obj):
         if obj.cliCod:
-            return obj.cliCod.cli_dni
+            return obj.cliCod.cliNumDoc
         return None
 
     def get_cliente_tipo_doc(self, obj):
         if obj.cliCod:
-            return obj.cliCod.cli_tipo_doc
+            return obj.cliCod.cliTipoDoc
         return None
     
     def get_optometra_nombre(self, obj):
@@ -62,20 +62,20 @@ class RecetaListSerializer(serializers.ModelSerializer):
             'cliCod', 'cliente_nombre', 'cliente_documento', 'cliente_tipo_doc',
             'optometra_nombre'
         ]
-    
+
     def get_cliente_nombre(self, obj):
         if obj.cliCod:
-            return f"{obj.cliCod.cli_nombre} {obj.cliCod.cli_apellido}"
+            return f"{obj.cliCod.cliNombre} {obj.cliCod.cliApellido}"
         return None
 
     def get_cliente_documento(self, obj):
         if obj.cliCod:
-            return obj.cliCod.cli_dni
+            return obj.cliCod.cliNumDoc
         return None
 
     def get_cliente_tipo_doc(self, obj):
         if obj.cliCod:
-            return obj.cliCod.cli_tipo_doc
+            return obj.cliCod.cliTipoDoc
         return None
     
     def get_optometra_nombre(self, obj):
