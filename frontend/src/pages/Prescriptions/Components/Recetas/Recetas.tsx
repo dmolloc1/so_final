@@ -69,9 +69,27 @@ export default function RecetasPage({
 
   const loadRecipes = async () => {
     try {
+      const storedBranch = (() => {
+        try {
+          const userStr = localStorage.getItem("user");
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            return (
+              user.sucurCod ||
+              user.sucursal?.sucurCod ||
+              localStorage.getItem("sucursal") ||
+              ""
+            );
+          }
+          return localStorage.getItem("sucursal") || "";
+        } catch (error) {
+          console.warn("No se pudo obtener la sucursal almacenada", error);
+          return "";
+        }
+      })();
+
       const filters: any = {
-        search: searchTerm || undefined,
-        sucurCod: branchFilter || undefined,
+        sucurCod: branchFilter || storedBranch || undefined,
         receTipoLent: tipoLenteFilter || undefined,
         cliCod: clientFilter || undefined,
       };
