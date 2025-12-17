@@ -2,11 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { Search, Plus, Edit2, Trash2, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import DataTable, { type Column } from "../../../../components/Table/DataTable";
 import clientService, { type Client } from "../../../../services/clientService";
 import ClientForm from "./ClienteForm";
 
-export default function Clientes() {
+interface ClientesProps {
+  onAddReceta?: (cliente: Client) => void;
+  onVerRecetas?: (cliente: Client) => void;
+}
+
+export default function Clientes({ onAddReceta, onVerRecetas }: ClientesProps) {
+  const navigate = useNavigate();
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -87,6 +94,30 @@ export default function Clientes() {
       label: "ACCIONES",
       render: (row) => (
         <div className="flex justify-center gap-2">
+          <button
+            onClick={() => {
+              onVerRecetas?.(row);
+              navigate("/prescriptions", {
+                state: { clienteSeleccionado: row },
+              });
+            }}
+            className="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
+            title="Ver Recetas"
+          >
+            <span className="text-xs font-bold">Ver Recetas</span>
+          </button>
+          <button
+            onClick={() => {
+              onAddReceta?.(row);
+              navigate("/prescriptions", {
+                state: { clienteSeleccionado: row, abrirFormularioReceta: true },
+              });
+            }}
+            className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+            title="Agregar Receta"
+          >
+            <span className="text-xs font-bold">+ Agregar Receta</span>
+          </button>
           <button
             onClick={() => {
               setEditingClient(row);

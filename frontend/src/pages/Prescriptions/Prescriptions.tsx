@@ -1,8 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ClientesPage from "./Components/Clientes/Clientes";
 import RecetasPage from "./Components/Recetas/Recetas";
+import type { Client } from "../../services/clientService";
+
+interface LocationState {
+  clienteSeleccionado?: Client;
+  abrirFormularioReceta?: boolean;
+}
+
 export default function Prescriptions() {
+  const location = useLocation();
+  const state = (location.state || {}) as LocationState;
+
   const [selectedTab, setSelectedTab] = useState("clientes");
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<Client | null>(
+    null
+  );
+  const [forzarAperturaFormulario, setForzarAperturaFormulario] =
+    useState(false);
+
+  useEffect(() => {
+    if (state?.clienteSeleccionado) {
+      setClienteSeleccionado(state.clienteSeleccionado);
+      setSelectedTab("recetas");
+    }
+
+    if (state?.abrirFormularioReceta) {
+      setForzarAperturaFormulario(true);
+      setSelectedTab("recetas");
+    }
+  }, [state]);
 
   return (
     <div className="p-8">
@@ -34,8 +62,27 @@ export default function Prescriptions() {
       </div>
 
       {/* Contenido */}
-      {selectedTab === "clientes" && <ClientesPage />}
-      {selectedTab === "recetas" && <RecetasPage />}
+      {selectedTab === "clientes" && (
+        <ClientesPage
+          onAddReceta={(cliente) => {
+            setClienteSeleccionado(cliente);
+            setForzarAperturaFormulario(true);
+            setSelectedTab("recetas");
+          }}
+          onVerRecetas={(cliente) => {
+            setClienteSeleccionado(cliente);
+            setForzarAperturaFormulario(false);
+            setSelectedTab("recetas");
+          }}
+        />
+      )}
+      {selectedTab === "recetas" && (
+        <RecetasPage
+          clienteSeleccionado={clienteSeleccionado}
+          forzarAperturaFormulario={forzarAperturaFormulario}
+          onFormularioCerrado={() => setForzarAperturaFormulario(false)}
+        />
+      )}
 
     </div>
   );

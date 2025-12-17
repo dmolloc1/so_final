@@ -1,26 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Edit2, Trash2 } from "lucide-react";
 import { recipeService } from "../../../../services/recipeService";
 import type { Recipe } from "../../../../types/recipe";
+import type { Client } from "../../../../services/clientService";
 
 import SearchInput from "../../../../components/Common/SearchInput";
 import AddButton from "../../../../components/Common/AddButton";
 import ReloadButton from "../../../../components/Common/ReloadButton";
-import MoreInfoButton from "../../../../components/Common/MoreInfoButton";
 import DataTable from "../../../../components/Table/DataTable";
 import api from "../../../../auth/services/api";
 
 // IMPORTA EL FORMULARIO DE RECETA
 import RecetaForm from "./RecetaForm";
 
-export default function RecetasPage() {
+interface RecetasProps {
+  clienteSeleccionado?: Client | null;
+  forzarAperturaFormulario?: boolean;
+  onFormularioCerrado?: () => void;
+}
+
+export default function RecetasPage({
+  clienteSeleccionado,
+  forzarAperturaFormulario = false,
+  onFormularioCerrado,
+}: RecetasProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [optometristas, setOptometristas] = useState<any[]>([]);
   const [sucursales, setSucursales] = useState<any[]>([]);
 
   // ESTADO PARA ABRIR/CERRAR EL MODAL
   const [isRecetaFormOpen, setIsRecetaFormOpen] = useState(false);
+  const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [branchFilter, setBranchFilter] = useState("");
@@ -28,6 +40,7 @@ export default function RecetasPage() {
   const [tipoLenteFilter, setTipoLenteFilter] = useState("");
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
+  const [clientFilter, setClientFilter] = useState<number | string>("");
 
   const loadSucursales = async () => {
     try {
@@ -60,9 +73,26 @@ export default function RecetasPage() {
         search: searchTerm || undefined,
         sucurCod: branchFilter || undefined,
         receTipoLent: tipoLenteFilter || undefined,
+        cliCod: clientFilter || undefined,
       };
 
       let data = await recipeService.getAll(filters);
+
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        data = data.filter((r) => {
+          const nombre = r.cliente_nombre?.toLowerCase() || "";
+          const doc = (r as any).cliente_documento?.toLowerCase?.() || "";
+          const optometra = r.optometra_nombre?.toLowerCase() || "";
+          const recetaCodigo = String(r.receCod ?? "");
+          return (
+            nombre.includes(term) ||
+            doc.includes(term) ||
+            optometra.includes(term) ||
+            recetaCodigo.includes(term)
+          );
+        });
+      }
 
       if (fechaInicio)
         data = data.filter((r) => new Date(r.receFech) >= new Date(fechaInicio));
@@ -86,7 +116,30 @@ export default function RecetasPage() {
 
   useEffect(() => {
     loadRecipes();
-  }, [searchTerm, branchFilter, optometraFilter, tipoLenteFilter, fechaInicio, fechaFin]);
+  }, [
+    searchTerm,
+    branchFilter,
+    optometraFilter,
+    tipoLenteFilter,
+    fechaInicio,
+    fechaFin,
+    clientFilter,
+  ]);
+
+  useEffect(() => {
+    if (clienteSeleccionado?.cli_cod) {
+      setClientFilter(clienteSeleccionado.cli_cod);
+      if (clienteSeleccionado.cli_dni) {
+        setSearchTerm(clienteSeleccionado.cli_dni);
+      }
+    }
+  }, [clienteSeleccionado]);
+
+  useEffect(() => {
+    if (forzarAperturaFormulario) {
+      setIsRecetaFormOpen(true);
+    }
+  }, [forzarAperturaFormulario]);
 
   const columns = [
     {
@@ -110,18 +163,36 @@ export default function RecetasPage() {
       render: (row: Recipe) => row.cliente_nombre || "—",
     },
     {
-      key: "sucursal_nombre",
-      label: "Sucursal",
-      render: (row: Recipe) => row.sucursal_nombre || "—",
-    },
-    {
       key: "actions",
       label: "Acciones",
       render: (row: Recipe) => (
-        <MoreInfoButton
-          onView={() => console.log("Ver receta", row.receCod)}
-          onDelete={() => console.log("Eliminar receta", row.receCod)}
-        />
+        <div className="flex justify-center gap-2">
+          <button
+            onClick={() => {
+              setEditingRecipe(row);
+              setIsRecetaFormOpen(true);
+            }}
+            className="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
+            title="Editar"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={async () => {
+              if (
+                row.receCod &&
+                window.confirm("¿Deseas eliminar esta receta de forma permanente?")
+              ) {
+                await recipeService.delete(row.receCod);
+                loadRecipes();
+              }
+            }}
+            className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+            title="Eliminar"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -212,15 +283,26 @@ export default function RecetasPage() {
 
       <RecetaForm
         isOpen={isRecetaFormOpen}
-        onClose={() => setIsRecetaFormOpen(false)}
+        onClose={() => {
+          setEditingRecipe(null);
+          setIsRecetaFormOpen(false);
+          onFormularioCerrado?.();
+        }}
         onSubmit={async (data) => {
           const payload = {
             ...(data as Partial<Recipe>),
             receFech: (data as Partial<Recipe>).receFech ?? new Date().toISOString(),
           } as Omit<Recipe, "receCod">;
 
-          await recipeService.create(payload);
+          if (editingRecipe?.receCod) {
+            await recipeService.update(editingRecipe.receCod, payload);
+          } else {
+            await recipeService.create(payload);
+          }
+
+          setEditingRecipe(null);
           setIsRecetaFormOpen(false);
+          onFormularioCerrado?.();
           loadRecipes();
         }}
       />

@@ -11,6 +11,14 @@ class ClienteViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['cliNombre', 'cliApellido', 'cliNumDoc', 'cliEmail']
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        tipo_doc = self.request.query_params.get('tipo_doc')
+
+        if tipo_doc in dict(Cliente.TIPO_DOCUMENTO_CHOICES):
+            queryset = queryset.filter(cliTipoDoc=tipo_doc)
+
+        return queryset
     def perform_create(self, serializer):
         user = self.request.user
         serializer.save(sucurCod=user.sucurCod)
