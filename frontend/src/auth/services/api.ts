@@ -63,10 +63,26 @@ api.interceptors.request.use(
         );
 
         if (config.method === 'get' && branchCode && needsBranchParam) {
-          config.params = {
-            ...config.params,
-            branch: branchCode,
-          };
+          const currentParams = config.params;
+
+          const hasExplicitBranch =
+            (currentParams instanceof URLSearchParams &&
+              (currentParams.has('branch') || currentParams.has('sucurCod')))
+            || (!!currentParams && typeof currentParams === 'object' &&
+              ('branch' in currentParams || 'sucurCod' in currentParams));
+
+          if (!hasExplicitBranch) {
+            if (currentParams instanceof URLSearchParams) {
+              const updatedParams = new URLSearchParams(currentParams);
+              updatedParams.set('branch', String(branchCode));
+              config.params = updatedParams;
+            } else {
+              config.params = {
+                ...currentParams,
+                branch: branchCode,
+              };
+            }
+          }
         }
 
         if (['post', 'put', 'patch'].includes(config.method || '') && branchCode) {
