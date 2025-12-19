@@ -171,6 +171,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
       if (Array.isArray(data) && data.length > 0) {
         const cli = data[0];
         setPaciente(cli);
+        setErrors((prev) => ({ ...prev, paciente: undefined }));
 
         setFormData((prev) => ({
           ...prev,
@@ -178,9 +179,20 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
           fecha_nac: cli.cli_fecha_nac?.split("T")[0] || "",
           telefono: cli.cli_telefono || "",
         }));
+      } else {
+        setPaciente(null);
+        setErrors((prev) => ({
+          ...prev,
+          paciente: "Cliente no encontrado.",
+        }));
       }
     } catch (error) {
       console.error("Error buscando paciente:", error);
+      setPaciente(null);
+      setErrors((prev) => ({
+        ...prev,
+        paciente: "Error al buscar el cliente.",
+      }));
     }
   };
 
@@ -225,6 +237,10 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     }
 
     if (!paciente) {
+      setErrors((prev) => ({
+        ...prev,
+        paciente: "Cliente no encontrado.",
+      }));
       notifyWarning("Debe seleccionar un paciente válido.");
       return;
     }
