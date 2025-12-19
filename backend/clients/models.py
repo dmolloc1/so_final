@@ -14,9 +14,9 @@ class Cliente(models.Model):
     cliRazSocial = models.CharField(max_length=100, blank=True, null=True)
     cliDirec = models.CharField(max_length=200)
     cliTelef = models.CharField(max_length=9)
-    cliEmail = models.EmailField(unique=True)    
-    cliFechaNac = models.DateField()
-    sucurCod = models.ForeignKey('Branch.Branch', on_delete=models.PROTECT, verbose_name="Sucursal", db_column='sucurCod', related_name='clientes', blank=True, null=True)
+    cliEmail = models.EmailField(unique=True)
+    sucurCod = models.PositiveIntegerField(default=0)
+    cliFechaNac = models.DateField(null=True, blank=True)
     
     def __str__(self):
         return f"{self.cliNombre} {self.cliApellido} ({self.cliNumDoc})"

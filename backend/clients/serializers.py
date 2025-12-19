@@ -10,11 +10,15 @@ class ClienteSerializer(serializers.ModelSerializer):
     cli_direccion = serializers.CharField(source='cliDirec')
     cli_telefono = serializers.CharField(source='cliTelef')
     cli_email = serializers.EmailField(source='cliEmail')        
-    cli_fecha_nac = serializers.DateField(source='cliFechaNac', required=True)
-
+    cli_fecha_nac = serializers.DateField(
+        source='cliFechaNac',
+        required=False,
+        allow_null=True
+    )
+    cli_ciudad = serializers.IntegerField(source='sucurCod', read_only=True)
     class Meta:
         model = Cliente
         fields = [
             'cli_cod', 'cli_tipo_doc', 'cli_dni', 'cli_nombre', 'cli_apellido',
-            'cli_direccion', 'cli_telefono', 'cli_email', 'cli_fecha_nac'
+            'cli_direccion', 'cli_telefono', 'cli_email', 'cli_fecha_nac', 'cli_ciudad'
         ]
