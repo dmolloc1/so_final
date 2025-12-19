@@ -9,6 +9,7 @@ import api from "../../../../auth/services/api";
 import type { Client } from "../../../../services/clientService";
 import type { Recipe } from "../../../../types/recipe";
 import { useAuth } from "../../../../auth/hooks/useAuth";
+import { notifyWarning } from "../../../../shared/notifications";
 
 interface RecetaFormProps {
   isOpen: boolean;
@@ -125,7 +126,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
     e.preventDefault();
 
     if (!paciente) {
-      alert("Debe seleccionar un paciente válido.");
+      notifyWarning("Debe seleccionar un paciente válido.");
       return;
     }
 

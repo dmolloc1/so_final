@@ -13,6 +13,7 @@ import supplierService from '../../../../services/supplierService';
 import api from '../../../../auth/services/api';
 import Modal from '../../../../components/Modal/modal';
 import BarcodeDisplay from '../../../../shared/BarcodeDisplay';
+import { notifyError, notifySuccess, notifyWarning } from '../../../../shared/notifications';
 
 interface BranchInventoryProps {
   user: User;
@@ -298,7 +299,7 @@ const BranchInventory: React.FC<BranchInventoryProps> = ({ user }) => {
   // Funciones para código de barras
   const handleShowBarcode = (product: ProductInBranch) => {
     if (!product.barcode) {
-      alert('Este producto no tiene código de barras generado.');
+      notifyWarning('Este producto no tiene código de barras generado.');
       return;
     }
     setBarcodeProduct(product);
@@ -332,10 +333,10 @@ const BranchInventory: React.FC<BranchInventoryProps> = ({ user }) => {
       );
       setShowBarcodeModal(true);
       
-      alert('Código de barras generado exitosamente');
+      notifySuccess('Código de barras generado exitosamente');
     } catch (error) {
       console.error('Error al generar código de barras:', error);
-      alert('Error al generar el código de barras');
+      notifyError('Error al generar el código de barras');
     }
   };
 
@@ -367,10 +368,10 @@ const BranchInventory: React.FC<BranchInventoryProps> = ({ user }) => {
         { ...prev, barcode: updated.prodBarcode } : null
       );
       
-      alert('Código de barras regenerado exitosamente');
+      notifySuccess('Código de barras regenerado exitosamente');
     } catch (error) {
       console.error('Error al regenerar código de barras:', error);
-      alert('Error al regenerar el código de barras');
+      notifyError('Error al regenerar el código de barras');
     }
   };
 
@@ -406,7 +407,7 @@ const BranchInventory: React.FC<BranchInventoryProps> = ({ user }) => {
 
   const handleDeleteProduct = async (product: ProductInBranch) => {
     if (product.estado === 'Inactive') {
-      alert('Este producto ya está inactivo');
+      notifyWarning('Este producto ya está inactivo');
       return;
     }
 
@@ -417,11 +418,11 @@ const BranchInventory: React.FC<BranchInventoryProps> = ({ user }) => {
     try {
       await productService.deactivate(product.producto_id);
       await loadBranchData();
-      alert('Producto desactivado correctamente');
+      notifySuccess('Producto desactivado correctamente');
     } catch (error: any) {
       console.error('Error al desactivar producto:', error);
       const errorMsg = error.response?.data?.message || 'Error al desactivar el producto';
-      alert(errorMsg);
+      notifyError(errorMsg);
     }
   };
 

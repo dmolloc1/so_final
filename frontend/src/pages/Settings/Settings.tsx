@@ -7,6 +7,7 @@ import type { User } from "../../auth/types/user";
 import type { Branch } from "../../types/branch";
 import { useBranch } from "../../context/BranchContext";
 import { useBranchesContext } from "./Components/BranchManagement/ContextBranches";
+import { notifyError, notifySuccess, notifyWarning } from "../../shared/notifications";
 
 export default function Settings() {
   const { updateBranch } = useBranch();
@@ -64,17 +65,17 @@ export default function Settings() {
   // MODIFICADO: Ahora usa el contexto para actualizar
   const handleBranchUpdate = async () => {
     if (!currentUser || !selectedBranchId) {
-      alert("Por favor selecciona una sucursal");
+      notifyWarning("Por favor selecciona una sucursal");
       return;
     }
     
     setIsSaving(true);
     try {
       await updateBranch(selectedBranchId); // USA EL CONTEXTO
-      alert("Sucursal actualizada correctamente. La página se recargará.");
+      notifySuccess("Sucursal actualizada correctamente. La página se recargará.");
     } catch (err) {
       console.error("Error al actualizar sucursal", err);
-      alert("Error al actualizar sucursal");
+      notifyError("Error al actualizar sucursal");
     } finally {
       setIsSaving(false);
     }

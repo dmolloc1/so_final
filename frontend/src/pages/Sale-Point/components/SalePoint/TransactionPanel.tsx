@@ -11,6 +11,7 @@ import type {
 import { getSellers } from '../../../../auth/services/userService';
 
 import { consultarDni } from '../../../../services/reniec/reniecService';
+import { notifyWarning } from '../../../../shared/notifications';
 
 interface TransactionPanelProps {
   cart: CartItem[];
@@ -172,39 +173,39 @@ const TransactionPanel: React.FC<TransactionPanelProps> = ({
 
   const handleProcessSale = () => {
     if (cart.length === 0) {
-      alert('El carrito está vacío');
+      notifyWarning('El carrito está vacío');
       return;
     }
 
     if (!selectedVendor) {
-      alert('Selecciona un vendedor');
+      notifyWarning('Selecciona un vendedor');
       return;
     }
 
     // Validaciones adicionales según método de pago
     if (paymentMethod === 'TARJETA' && !tipoTarjeta) {
-      alert('Selecciona el tipo de tarjeta');
+      notifyWarning('Selecciona el tipo de tarjeta');
       return;
     }
 
     if ((paymentMethod === 'TRANSFERENCIA' || paymentMethod === 'YAPE' || paymentMethod === 'PLIN') && !referenciaPago.trim()) {
-      alert('Ingresa la referencia de pago');
+      notifyWarning('Ingresa la referencia de pago');
       return;
     }
 
     if (tipoComprobante === '01' && !customer?.cliDireccion?.trim()) {
-      alert('La dirección es obligatoria para emitir una Factura');
+      notifyWarning('La dirección es obligatoria para emitir una Factura');
       return;
     }
 
     // Validar datos mínimos del cliente para Factura
     if (tipoComprobante === '01') {
       if (!customer?.cliNombreCom?.trim()) {
-        alert('El nombre o razón social es obligatorio para emitir una Factura');
+        notifyWarning('El nombre o razón social es obligatorio para emitir una Factura');
         return;
       }
       if (!customer?.cliDocNum?.trim()) {
-        alert('El número de documento es obligatorio para emitir una Factura');
+        notifyWarning('El número de documento es obligatorio para emitir una Factura');
         return;
       }
     }
@@ -217,7 +218,7 @@ const TransactionPanel: React.FC<TransactionPanelProps> = ({
 
     // Validar que el adelanto no sea mayor al total
     if (adelanto > ventaTotal) {
-      alert('El adelanto no puede ser mayor al total de la venta');
+      notifyWarning('El adelanto no puede ser mayor al total de la venta');
       return;
     }
 
