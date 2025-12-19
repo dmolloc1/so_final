@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Modal from "../../../../components/Modal/modal";
 import FormInput from "../../../../components/Forms/FormInput";
 import api from "../../../../auth/services/api";
-import type { Client } from "../../../../services/clientService";
+import clientService, { type Client } from "../../../../services/clientService";
 import type { Recipe } from "../../../../types/recipe";
 import { useAuth } from "../../../../auth/hooks/useAuth";
 import { notifyError, notifyWarning } from "../../../../shared/notifications";
@@ -92,6 +92,12 @@ export default function RecipeForm({
   
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const fechaNacPorDefecto = "1990-01-01";
+
+  const normalizarFechaNac = (fecha?: string | null) => {
+    if (!fecha) return fechaNacPorDefecto;
+    return fecha.split("T")[0];
+  };
 
   // Cargar datos si está editando
   useEffect(() => {
@@ -100,7 +106,7 @@ export default function RecipeForm({
         dni: editingRecipe.cliente_documento || "",
         tipoDoc: editingRecipe.cliente_tipo_doc || "DNI",
         nombre: editingRecipe.cliente_nombre || "",
-        fecha_nac: "",
+        fecha_nac: fechaNacPorDefecto,
         telefono: "",
         recTipoLente: editingRecipe.recTipoLente || "Mixto",
         dpGeneral: editingRecipe.dpGeneral?.toString() || "",
@@ -131,7 +137,45 @@ export default function RecipeForm({
         observaciones: editingRecipe.recObservaciones || "",
       });
     }
-  }, [editingRecipe]);
+  }, [editingRecipe, fechaNacPorDefecto]);
+
+  useEffect(() => {
+    if (!editingRecipe?.cliente) return;
+    let activo = true;
+
+    const cargarCliente = async () => {
+      try {
+        const cliente = await clientService.getById(editingRecipe.cliente);
+        if (!activo) return;
+
+        const nombre = cliente.cli_nombre || "";
+        const apellido = cliente.cli_apellido || "";
+        const telefono = cliente.cli_telefono || "";
+
+        setPaciente(cliente);
+        setFormData((prev) => ({
+          ...prev,
+          dni: prev.dni || cliente.cli_dni || "",
+          tipoDoc: prev.tipoDoc || cliente.cli_tipo_doc || "DNI",
+          nombre: prev.nombre || `${nombre} ${apellido}`.trim(),
+          fecha_nac: prev.fecha_nac || normalizarFechaNac(cliente.cli_fecha_nac),
+          telefono: prev.telefono || telefono,
+        }));
+      } catch (error) {
+        console.error("Error cargando cliente:", error);
+        setFormData((prev) => ({
+          ...prev,
+          fecha_nac: prev.fecha_nac || fechaNacPorDefecto,
+        }));
+      }
+    };
+
+    cargarCliente();
+
+    return () => {
+      activo = false;
+    };
+  }, [editingRecipe, fechaNacPorDefecto]);
 
   // Cargar cliente preseleccionado
   useEffect(() => {
@@ -150,7 +194,7 @@ export default function RecipeForm({
         dni: numDoc,
         tipoDoc: tipoDoc,
         nombre: `${nombre} ${apellido}`.trim(),
-        fecha_nac: fechaNac?.split("T")[0] || "",
+        fecha_nac: normalizarFechaNac(fechaNac),
         telefono: telefono,
       }));
     }
@@ -256,7 +300,7 @@ export default function RecipeForm({
       setFormData((prev) => ({
         ...prev,
         nombre: `${nombre} ${apellido}`.trim(),
-        fecha_nac: fechaNac?.split("T")[0] || "",
+        fecha_nac: normalizarFechaNac(fechaNac),
         telefono: telefono || "",
       }));
     } catch (error) {
