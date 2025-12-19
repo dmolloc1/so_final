@@ -1,0 +1,102 @@
+Resumen de la GUI
+=================
+
+Este documento describe cómo se implementa la interfaz gráfica del simulador, qué
+clases coordinan cada sección (configuración, panel de control y resultados) y
+qué métodos conectan la simulación en tiempo real con el dashboard y la página
+de métricas.
+
+1. Punto de entrada y navegación
+-------------------------------
+- **`modules/gui/MainFX.java`** crea la aplicación JavaFX, arma la barra de
+  navegación y administra el cambio de páginas mediante `switchPage`. La
+  página inicial es Config y las otras vistas son Dashboard y Resultados.
+  `showResultados` permite reemplazar la vista de métricas cuando termina la
+  simulación.【F:src/main/java/modules/gui/MainFX.java†L23-L188】
+
+2. Configuración y arranque de la simulación
+--------------------------------------------
+- **`modules/gui/pages/ConfigPage.java`** contiene el formulario de parámetros
+  (archivo de procesos, algoritmos, quantum, tamaño de frames, etc.). El método
+  `runSimulation` valida la configuración, inicializa el visualizador de memoria
+  con `MemPanel.setConfig` y luego llama a `SimulationRunner.runSimulation` para
+  lanzar el motor real en segundo plano.【F:src/main/java/modules/gui/pages/ConfigPage.java†L17-L476】
+- `setCurrentEngine` guarda una referencia al `SimulationEngine` cuando ya está
+  creado, lo que permite activar el modo paso a paso desde el dashboard usando
+  los mismos paneles visuales.【F:src/main/java/modules/gui/pages/ConfigPage.java†L488-L504】
+
+3. Estructura del dashboard
+---------------------------
+- **`modules/gui/pages/DashboardPage.java`** arma el panel principal con cuatro
+  secciones: `ExePanel` (CPU/Gantt), `ProPanel` (colas), `MemPanel` (memoria) y
+  `LogsPanel` (bitácora). El botón "Iniciar Simulación" llama a
+  `iniciarSimulacion`, que limpia las colas, aplica la configuración de memoria
+  al `MemPanel`, pasa el modo paso a paso a `ConfigPage` y dispara
+  `configPage.runSimulation`. Luego espera a que el `SimulationEngine` esté
+  disponible para habilitar los controles de paso a paso.【F:src/main/java/modules/gui/pages/DashboardPage.java†L14-L304】
+
+4. Enlace en tiempo real con el motor de simulación
+---------------------------------------------------
+- **`modules/gui/SimulationRunner.java`** crea el `Scheduler`, el
+  `MemoryManager` y el `SimulationEngine`, y registra un `SimulationStateListener`
+  para propagar cada evento al dashboard. Antes de arrancar limpia el Gantt y
+  registra los PIDs en `ExePanel.initializeProcesses` y conecta el visualizador
+  de memoria como listener del administrador de memoria.【F:src/main/java/modules/gui/SimulationRunner.java†L67-L205】
+- Callbacks en el listener:
+  - `onExecutionStarted/Ended` y `onIOStarted/Ended` pintan bloques en el Gantt
+    mediante `ExePanel.addExecutionStart/addExecutionEnd/addIOStart/addIOEnd` y
+    contabilizan cambios de contexto con `incrementContextSwitch` y
+    `addContextSwitchBlock` para mostrar interrupciones.【F:src/main/java/modules/gui/SimulationRunner.java†L119-L160】
+  - `onReadyQueueChanged`, `onBlockedIOChanged`, `onBlockedMemoryChanged` y
+    `onRunningChanged` actualizan las listas del `ProPanel` para reflejar el
+    estado de las colas y del proceso en CPU.【F:src/main/java/modules/gui/SimulationRunner.java†L163-L194】
+  - `onTimeChanged` sincroniza el reloj mostrado en el Gantt con
+    `ExePanel.setCurrentTime` (implementado en el componente de Gantt).【F:src/main/java/modules/gui/SimulationRunner.java†L195-L205】
+- La simulación corre en un hilo separado (`SimulationThread`). Al terminar,
+  se construye un `ResultadosPage` con los datos calculados y `MainFX` conmuta a
+  la pestaña de métricas mediante `showResultados`. Esto mantiene la UI
+  responsiva mientras el motor trabaja.【F:src/main/java/modules/gui/SimulationRunner.java†L209-L218】
+
+5. Componentes del dashboard
+----------------------------
+- **`modules/gui/dashboard/ExePanel.java`** gestiona el diagrama de Gantt y las
+  métricas de CPU (cambios de contexto y tiempos). Permite alternar entre dos
+  vistas (`switchView`), limpiar y reinicializar procesos (`clearGantt`,
+  `initializeProcesses`) y resaltar el panel cuando llegan logs de ejecución.
+  También ofrece `incrementContextSwitch` para que el listener del motor
+  actualice el contador en tiempo real.【F:src/main/java/modules/gui/dashboard/ExePanel.java†L18-L326】
+- **`modules/gui/dashboard/ProPanel.java`** muestra las colas Ready, Blocked I/O,
+  Blocked Memory y el proceso Running. Los métodos `updateReadyQueue`,
+  `updateBlockedIO`, `updateBlockedMemory` y `updateRunning` son llamados desde
+  el listener para reflejar cambios de estado a medida que avanza la
+  simulación.【F:src/main/java/modules/gui/dashboard/ProPanel.java†L18-L239】
+- **`modules/gui/dashboard/MemPanel.java`** aloja el `MemoryVisualizer` y expone
+  `setConfig` para inicializarlo con el algoritmo de reemplazo y número de
+  marcos. `bindMemoryManager` permite registrar el visualizador como listener de
+  `MemoryManager`, de modo que los fallos de página y asignaciones aparezcan en
+  vivo.【F:src/main/java/modules/gui/dashboard/MemPanel.java†L15-L104】
+- **`modules/gui/dashboard/LogsPanel.java`** escucha los registros globales a
+  través de `Logger.addListener` y los muestra en un `ListView`, coloreando cada
+  línea según la categoría (memoria, ejecución, procesos, sincronización).
+  Mantiene el scroll al final para ver eventos recientes.【F:src/main/java/modules/gui/dashboard/LogsPanel.java†L11-L73】
+
+6. Página de resultados
+-----------------------
+- **`modules/gui/pages/ResultadosPage.java`** organiza las métricas finales en
+  tarjetas, gráficos y una tabla por proceso dentro de un `ScrollPane`.
+  `actualizarDatos` carga los valores entregados por el motor (algoritmo
+  elegido, uso de CPU, cambios de contexto, fallos de página y tiempos por
+  proceso). Se construye al finalizar la simulación y se muestra mediante
+  `MainFX.showResultados`.【F:src/main/java/modules/gui/pages/ResultadosPage.java†L24-L327】【F:src/main/java/modules/gui/SimulationRunner.java†L209-L218】
+
+Flujo resumido
+--------------
+1. `MainFX` inicia la app y muestra `ConfigPage`.
+2. El usuario configura parámetros y pulsa "Iniciar Simulación". `ConfigPage`
+   valida y llama a `SimulationRunner`.
+3. `SimulationRunner` crea el engine y conecta el `SimulationStateListener` con
+   `ExePanel`, `ProPanel` y `MemPanel` para reflejar eventos en tiempo real.
+4. El hilo de simulación corre y los paneles se actualizan conforme el engine
+   emite callbacks.
+5. Al finalizar, `SimulationRunner` genera `ResultadosPage` y `MainFX` cambia a
+   la vista de métricas.
