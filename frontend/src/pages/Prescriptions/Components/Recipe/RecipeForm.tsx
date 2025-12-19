@@ -137,15 +137,14 @@ export default function RecipeForm({
   useEffect(() => {
     if (clienteSeleccionado) {
       setPaciente(clienteSeleccionado);
-      
-      // Mapeo de campos antiguos y nuevos para mayor compatibilidad
-      const nombre = clienteSeleccionado.cli_nombre || clienteSeleccionado.cliNombre || "";
-      const apellido = clienteSeleccionado.cli_apellido || clienteSeleccionado.cliApellido || "";
-      const numDoc = clienteSeleccionado.cli_num_doc || clienteSeleccionado.cliNumDoc || "";
-      const tipoDoc = clienteSeleccionado.cli_tipo_doc || clienteSeleccionado.cliTipoDoc || "DNI";
-      const fechaNac = clienteSeleccionado.cli_fecha_nac || clienteSeleccionado.cliFechaNac || "";
-      const telefono = clienteSeleccionado.cli_telefono || clienteSeleccionado.cliTelefono || "";
-      
+
+      const nombre = clienteSeleccionado.cli_nombre || "";
+      const apellido = clienteSeleccionado.cli_apellido || "";
+      const numDoc = clienteSeleccionado.cli_dni || "";
+      const tipoDoc = clienteSeleccionado.cli_tipo_doc || "DNI";
+      const fechaNac = clienteSeleccionado.cli_fecha_nac || "";
+      const telefono = clienteSeleccionado.cli_telefono || "";
+
       setFormData((prev) => ({
         ...prev,
         dni: numDoc,
@@ -246,27 +245,14 @@ export default function RecipeForm({
       }
 
       const cli = data[0];
-      
-      // DEBUG: Ver estructura exacta del cliente
-      console.log("=== CLIENTE ENCONTRADO ===");
-      console.log("Objeto completo:", cli);
-      console.log("Campos disponibles:", Object.keys(cli));
-      
+
       setPaciente(cli);
-      
-      // Probar múltiples variaciones de nombres de campos
-      const nombre = cli.cliNombre || cli.cli_nombre || cli.nombre || "";
-      const apellido = cli.cliApellido || cli.cli_apellido || cli.apellido || "";
-      const fechaNac = cli.cliFechaNac || cli.cli_fecha_nac || cli.fecha_nac || cli.fechaNac || "";
-      const telefono = cli.cliTelefono || cli.cli_telefono || cli.telefono || "";
-      
-      console.log("Valores mapeados:");
-      console.log("  nombre:", nombre);
-      console.log("  apellido:", apellido);
-      console.log("  fechaNac:", fechaNac);
-      console.log("  telefono:", telefono);
-      console.log("========================");
-      
+
+      const nombre = cli.cli_nombre || "";
+      const apellido = cli.cli_apellido || "";
+      const fechaNac = cli.cli_fecha_nac || "";
+      const telefono = cli.cli_telefono || "";
+
       setFormData((prev) => ({
         ...prev,
         nombre: `${nombre} ${apellido}`.trim(),

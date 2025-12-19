@@ -185,9 +185,16 @@ export default function RecetasPage({
       render: (row: Recipe) => (
         <div className="flex justify-center gap-2">
           <button
-            onClick={() => {
-              setEditingRecipe(row);
-              setIsRecetaFormOpen(true);
+            onClick={async () => {
+              if (!row.recCod) return;
+              try {
+                const fullRecipe = await recipeService.getById(row.recCod);
+                setEditingRecipe(fullRecipe);
+                setIsRecetaFormOpen(true);
+              } catch (error) {
+                console.error("Error cargando receta:", error);
+                notifyError("No se pudo cargar la receta.");
+              }
             }}
             className="p-1.5 bg-blue-100 text-blue-600 rounded"
           >
@@ -273,7 +280,7 @@ export default function RecetasPage({
           <option value="">Tipo de Lente</option>
           <option value="Blandos">Blandos</option>
           <option value="Rígidos">Rígidos</option>
-          <option value="Mixtos">Mixtos</option>
+          <option value="Mixto">Mixto</option>
         </select>
 
         <input
@@ -300,6 +307,8 @@ export default function RecetasPage({
           setIsRecetaFormOpen(false);
           onFormularioCerrado?.();
         }}
+        editingRecipe={editingRecipe}
+        clienteSeleccionado={clienteSeleccionado}
         onSubmit={async (data) => {
           try {
             if (editingRecipe?.recCod) {
