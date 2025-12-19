@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../../../../components/Modal/modal";
 import FormInput from "../../../../components/Forms/FormInput";
-import SearchInput from "../../../../components/Common/SearchInput";
-
 import api from "../../../../auth/services/api";
 import type { Client } from "../../../../services/clientService";
 import type { Recipe } from "../../../../types/recipe";
@@ -15,6 +13,32 @@ interface RecetaFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: Partial<Recipe>) => Promise<void>;
+}
+
+interface FormErrors {
+  tipoDoc?: string;
+  dni?: string;
+  paciente?: string;
+  receTipoLent?: string;
+  distPupilar?: string;
+  lejos_od_esf?: string;
+  lejos_od_cil?: string;
+  lejos_od_eje?: string;
+  lejos_od_avcc?: string;
+  lejos_od_dip?: string;
+  lejos_oi_esf?: string;
+  lejos_oi_cil?: string;
+  lejos_oi_eje?: string;
+  lejos_oi_avcc?: string;
+  lejos_oi_dip?: string;
+  cerca_od_esf?: string;
+  cerca_od_cil?: string;
+  cerca_od_eje?: string;
+  cerca_od_add?: string;
+  cerca_oi_esf?: string;
+  cerca_oi_cil?: string;
+  cerca_oi_eje?: string;
+  cerca_oi_add?: string;
 }
 
 export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProps) {
@@ -62,6 +86,75 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
   });
 
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const isValidNumber = (value: string) => /^-?\d+(\.\d+)?$/.test(value);
+
+  const validate = () => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.tipoDoc) {
+      newErrors.tipoDoc = "El tipo de documento es obligatorio.";
+    }
+
+    if (!formData.dni.trim()) {
+      newErrors.dni = "El número de documento es obligatorio.";
+    } else if (formData.tipoDoc === "DNI") {
+      if (!/^\d{8}$/.test(formData.dni)) {
+        newErrors.dni = "El DNI debe tener 8 dígitos.";
+      }
+    } else if (formData.tipoDoc === "CE") {
+      if (!/^[A-Z0-9]{9,12}$/i.test(formData.dni)) {
+        newErrors.dni = "El Carnet debe tener entre 9 y 12 caracteres alfanuméricos.";
+      }
+    }
+
+
+    if (!formData.receTipoLent.trim()) {
+      newErrors.receTipoLent = "El tipo de lente es obligatorio.";
+    }
+
+    if (formData.distPupilar.trim() && !isValidNumber(formData.distPupilar)) {
+      newErrors.distPupilar = "La distancia pupilar debe ser un número.";
+    }
+
+    const numericFields: Array<{ key: keyof FormErrors; value: string; label: string }> = [
+      { key: "lejos_od_esf", value: formData.lejos_od_esf, label: "Lejos OD ESF" },
+      { key: "lejos_od_cil", value: formData.lejos_od_cil, label: "Lejos OD CIL" },
+      { key: "lejos_od_eje", value: formData.lejos_od_eje, label: "Lejos OD EJE" },
+      { key: "lejos_od_avcc", value: formData.lejos_od_avcc, label: "Lejos OD AVCC" },
+      { key: "lejos_od_dip", value: formData.lejos_od_dip, label: "Lejos OD DIP" },
+      { key: "lejos_oi_esf", value: formData.lejos_oi_esf, label: "Lejos OI ESF" },
+      { key: "lejos_oi_cil", value: formData.lejos_oi_cil, label: "Lejos OI CIL" },
+      { key: "lejos_oi_eje", value: formData.lejos_oi_eje, label: "Lejos OI EJE" },
+      { key: "lejos_oi_avcc", value: formData.lejos_oi_avcc, label: "Lejos OI AVCC" },
+      { key: "lejos_oi_dip", value: formData.lejos_oi_dip, label: "Lejos OI DIP" },
+      { key: "cerca_od_esf", value: formData.cerca_od_esf, label: "Cerca OD ESF" },
+      { key: "cerca_od_cil", value: formData.cerca_od_cil, label: "Cerca OD CIL" },
+      { key: "cerca_od_eje", value: formData.cerca_od_eje, label: "Cerca OD EJE" },
+      { key: "cerca_od_add", value: formData.cerca_od_add, label: "Cerca OD ADD" },
+      { key: "cerca_oi_esf", value: formData.cerca_oi_esf, label: "Cerca OI ESF" },
+      { key: "cerca_oi_cil", value: formData.cerca_oi_cil, label: "Cerca OI CIL" },
+      { key: "cerca_oi_eje", value: formData.cerca_oi_eje, label: "Cerca OI EJE" },
+      { key: "cerca_oi_add", value: formData.cerca_oi_add, label: "Cerca OI ADD" },
+    ];
+
+    const hasAnyNumericValue = numericFields.some(({ value }) => value.trim() !== "");
+
+    if (!hasAnyNumericValue) {
+      newErrors.lejos_od_esf =
+        "Ingresa al menos un valor en la medición de vista.";
+    }
+
+    numericFields.forEach(({ key, value, label }) => {
+      if (value.trim() && !isValidNumber(value)) {
+        newErrors[key] = `${label} debe ser un número válido.`;
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Buscar paciente por DNI
   const buscarPaciente = async () => {
@@ -81,6 +174,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
       if (Array.isArray(data) && data.length > 0) {
         const cli = data[0];
         setPaciente(cli);
+        setErrors((prev) => ({ ...prev, paciente: undefined }));
 
         setFormData((prev) => ({
           ...prev,
@@ -88,9 +182,20 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
           fecha_nac: cli.cli_fecha_nac?.split("T")[0] || "",
           telefono: cli.cli_telefono || "",
         }));
+      } else {
+        setPaciente(null);
+        setErrors((prev) => ({
+          ...prev,
+          paciente: "Cliente no encontrado.",
+        }));
       }
     } catch (error) {
       console.error("Error buscando paciente:", error);
+      setPaciente(null);
+      setErrors((prev) => ({
+        ...prev,
+        paciente: "Error al buscar el cliente.",
+      }));
     }
   };
 
@@ -104,6 +209,13 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
   ) => {
     const { name, value } = e.target;
     setFormData((p) => ({ ...p, [name]: value }));
+
+    if (errors[name as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+    if (name === "dni" && errors.paciente) {
+      setErrors((prev) => ({ ...prev, paciente: undefined }));
+    }
   };
 
   // --------------------------------------------------
@@ -125,7 +237,16 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!validate()) {
+      notifyWarning("Revisa los campos marcados en rojo.");
+      return;
+    }
+
     if (!paciente) {
+      setErrors((prev) => ({
+        ...prev,
+        paciente: "Cliente no encontrado.",
+      }));
       notifyWarning("Debe seleccionar un paciente válido.");
       return;
     }
@@ -193,6 +314,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
       diagnostico: [],
       observaciones: "",
     });
+    setErrors({});
     onClose();
   };
 
@@ -249,11 +371,16 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
                   name="tipoDoc"
                   value={formData.tipoDoc}
                   onChange={handleChange}
-                  className="w-full h-11 border rounded-lg px-2"
+                  className={`w-full h-11 border rounded-lg px-2 ${
+                    errors.tipoDoc ? "border-red-500" : ""
+                  }`}
                 >
                   <option value="DNI">DNI</option>
                   <option value="CE">Carnet de extranjería</option>
                 </select>
+                {errors.tipoDoc && (
+                  <p className="mt-1 text-xs text-red-500">{errors.tipoDoc}</p>
+                )}
               </div>
 
               <div>
@@ -267,8 +394,18 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
                   onChange={handleChange}
                   maxLength={formData.tipoDoc === "DNI" ? 8 : 12}
                   required
-                  className="w-full h-11 px-4 border rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className={`w-full h-11 px-4 border rounded-lg focus:ring-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.dni ? "border-red-500" : ""
+                  }`}
                 />
+                {errors.dni && (
+                  <p className="mt-1 text-xs text-red-500">{errors.dni}</p>
+                )}
+                {errors.paciente && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.paciente}
+                  </p>
+                )}
               </div>
 
               <button
@@ -318,6 +455,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
                 value={formData.receTipoLent}
                 onChange={handleChange}
                 placeholder="Mixto"
+                error={errors.receTipoLent}
               />
 
               <FormInput
@@ -326,6 +464,7 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
                 value={formData.distPupilar}
                 onChange={handleChange}
                 placeholder="DIP"
+                error={errors.distPupilar}
               />
             </div>
 
@@ -337,22 +476,142 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
               <div className="grid grid-cols-6 gap-2 items-center mt-2">
                 <span className="font-semibold col-span-1">OD</span>
 
-                <input className="border p-2 rounded text-center" name="lejos_od_esf" placeholder="ESF" value={formData.lejos_od_esf} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_od_cil" placeholder="CIL" value={formData.lejos_od_cil} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_od_eje" placeholder="EJE" value={formData.lejos_od_eje} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_od_avcc" placeholder="AVCC" value={formData.lejos_od_avcc} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_od_dip" placeholder="DIP" value={formData.lejos_od_dip} onChange={handleChange} />
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_od_esf ? "border-red-500" : ""}`}
+                    name="lejos_od_esf"
+                    placeholder="ESF"
+                    value={formData.lejos_od_esf}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_od_esf && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_od_esf}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_od_cil ? "border-red-500" : ""}`}
+                    name="lejos_od_cil"
+                    placeholder="CIL"
+                    value={formData.lejos_od_cil}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_od_cil && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_od_cil}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_od_eje ? "border-red-500" : ""}`}
+                    name="lejos_od_eje"
+                    placeholder="EJE"
+                    value={formData.lejos_od_eje}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_od_eje && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_od_eje}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_od_avcc ? "border-red-500" : ""}`}
+                    name="lejos_od_avcc"
+                    placeholder="AVCC"
+                    value={formData.lejos_od_avcc}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_od_avcc && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_od_avcc}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_od_dip ? "border-red-500" : ""}`}
+                    name="lejos_od_dip"
+                    placeholder="DIP"
+                    value={formData.lejos_od_dip}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_od_dip && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_od_dip}</p>
+                  )}
+                </div>
               </div>
 
               {/* OI */}
               <div className="grid grid-cols-6 gap-2 items-center mt-2">
                 <span className="font-semibold col-span-1">OI</span>
 
-                <input className="border p-2 rounded text-center" name="lejos_oi_esf" placeholder="ESF" value={formData.lejos_oi_esf} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_oi_cil" placeholder="CIL" value={formData.lejos_oi_cil} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_oi_eje" placeholder="EJE" value={formData.lejos_oi_eje} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_oi_avcc" placeholder="AVCC" value={formData.lejos_oi_avcc} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="lejos_oi_dip" placeholder="DIP" value={formData.lejos_oi_dip} onChange={handleChange} />
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_oi_esf ? "border-red-500" : ""}`}
+                    name="lejos_oi_esf"
+                    placeholder="ESF"
+                    value={formData.lejos_oi_esf}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_oi_esf && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_oi_esf}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_oi_cil ? "border-red-500" : ""}`}
+                    name="lejos_oi_cil"
+                    placeholder="CIL"
+                    value={formData.lejos_oi_cil}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_oi_cil && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_oi_cil}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_oi_eje ? "border-red-500" : ""}`}
+                    name="lejos_oi_eje"
+                    placeholder="EJE"
+                    value={formData.lejos_oi_eje}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_oi_eje && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_oi_eje}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_oi_avcc ? "border-red-500" : ""}`}
+                    name="lejos_oi_avcc"
+                    placeholder="AVCC"
+                    value={formData.lejos_oi_avcc}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_oi_avcc && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_oi_avcc}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.lejos_oi_dip ? "border-red-500" : ""}`}
+                    name="lejos_oi_dip"
+                    placeholder="DIP"
+                    value={formData.lejos_oi_dip}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.lejos_oi_dip && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.lejos_oi_dip}</p>
+                  )}
+                </div>
               </div>
             </fieldset>
 
@@ -363,19 +622,115 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
               {/* OD */}
               <div className="grid grid-cols-5 gap-2 items-center mt-2">
                 <span className="font-semibold col-span-1">OD</span>
-                <input className="border p-2 rounded text-center" name="cerca_od_esf" placeholder="ESF" value={formData.cerca_od_esf} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="cerca_od_cil" placeholder="CIL" value={formData.cerca_od_cil} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="cerca_od_eje" placeholder="EJE" value={formData.cerca_od_eje} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="cerca_od_add" placeholder="ADD" value={formData.cerca_od_add} onChange={handleChange} />
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_od_esf ? "border-red-500" : ""}`}
+                    name="cerca_od_esf"
+                    placeholder="ESF"
+                    value={formData.cerca_od_esf}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_od_esf && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_od_esf}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_od_cil ? "border-red-500" : ""}`}
+                    name="cerca_od_cil"
+                    placeholder="CIL"
+                    value={formData.cerca_od_cil}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_od_cil && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_od_cil}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_od_eje ? "border-red-500" : ""}`}
+                    name="cerca_od_eje"
+                    placeholder="EJE"
+                    value={formData.cerca_od_eje}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_od_eje && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_od_eje}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_od_add ? "border-red-500" : ""}`}
+                    name="cerca_od_add"
+                    placeholder="ADD"
+                    value={formData.cerca_od_add}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_od_add && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_od_add}</p>
+                  )}
+                </div>
               </div>
 
               {/* OI */}
               <div className="grid grid-cols-5 gap-2 items-center mt-2">
                 <span className="font-semibold col-span-1">OI</span>
-                <input className="border p-2 rounded text-center" name="cerca_oi_esf" placeholder="ESF" value={formData.cerca_oi_esf} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="cerca_oi_cil" placeholder="CIL" value={formData.cerca_oi_cil} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="cerca_oi_eje" placeholder="EJE" value={formData.cerca_oi_eje} onChange={handleChange} />
-                <input className="border p-2 rounded text-center" name="cerca_oi_add" placeholder="ADD" value={formData.cerca_oi_add} onChange={handleChange} />
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_oi_esf ? "border-red-500" : ""}`}
+                    name="cerca_oi_esf"
+                    placeholder="ESF"
+                    value={formData.cerca_oi_esf}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_oi_esf && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_oi_esf}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_oi_cil ? "border-red-500" : ""}`}
+                    name="cerca_oi_cil"
+                    placeholder="CIL"
+                    value={formData.cerca_oi_cil}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_oi_cil && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_oi_cil}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_oi_eje ? "border-red-500" : ""}`}
+                    name="cerca_oi_eje"
+                    placeholder="EJE"
+                    value={formData.cerca_oi_eje}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_oi_eje && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_oi_eje}</p>
+                  )}
+                </div>
+                <div>
+                  <input
+                    className={`border p-2 rounded text-center w-full ${errors.cerca_oi_add ? "border-red-500" : ""}`}
+                    name="cerca_oi_add"
+                    placeholder="ADD"
+                    value={formData.cerca_oi_add}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                  />
+                  {errors.cerca_oi_add && (
+                    <p className="mt-1 text-[10px] text-red-500">{errors.cerca_oi_add}</p>
+                  )}
+                </div>
               </div>
             </fieldset>
           </div>
