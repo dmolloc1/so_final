@@ -11,6 +11,7 @@ import AddButton from "../../../../components/Common/AddButton";
 import ReloadButton from "../../../../components/Common/ReloadButton";
 import DataTable from "../../../../components/Table/DataTable";
 import api from "../../../../auth/services/api";
+import { notifyError, notifySuccess } from "../../../../shared/notifications";
 
 import RecetaForm from "./RecetaForm";
 
@@ -275,21 +276,33 @@ export default function RecetasPage({
           onFormularioCerrado?.();
         }}
         onSubmit={async (data) => {
-          if (editingRecipe?.receCod) {
-            await recipeService.update(editingRecipe.receCod, data);
-          } else {
-            const payload: Omit<Recipe, "receCod"> = {
-              ...data,
-              receFech: data.receFech ?? new Date().toISOString(),
-            } as Omit<Recipe, "receCod">;
+          try {
+            if (editingRecipe?.receCod) {
+              await recipeService.update(editingRecipe.receCod, data);
+              notifySuccess("Receta actualizada exitosamente.");
+            } else {
+              const payload: Omit<Recipe, "receCod"> = {
+                ...data,
+                receFech: data.receFech ?? new Date().toISOString(),
+              } as Omit<Recipe, "receCod">;
 
-            await recipeService.create(payload);
+              await recipeService.create(payload);
+              notifySuccess("Receta creada exitosamente.");
+            }
+
+            setEditingRecipe(null);
+            setIsRecetaFormOpen(false);
+            onFormularioCerrado?.();
+            loadRecipes();
+          } catch (error) {
+            console.error("Error guardando receta:", error);
+            notifyError(
+              editingRecipe?.receCod
+                ? "Receta no actualizada."
+                : "Receta no creada."
+            );
+            throw error;
           }
-
-          setEditingRecipe(null);
-          setIsRecetaFormOpen(false);
-          onFormularioCerrado?.();
-          loadRecipes();
         }}
       />
     </div>
