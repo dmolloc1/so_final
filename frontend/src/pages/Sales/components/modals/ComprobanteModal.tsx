@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Download, Printer, CheckCircle, Building2 } from 'lucide-react';
+import { notifyError, notifyWarning } from '../../../../shared/notifications';
 
 interface VentaDetalleItem {
   ventDetCod: number;
@@ -95,7 +96,7 @@ const ComprobanteModal = ({
 
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
-      alert('Por favor, permite ventanas emergentes para imprimir');
+      notifyWarning('Por favor, permite ventanas emergentes para imprimir');
       return;
     }
 
@@ -177,7 +178,7 @@ const ComprobanteModal = ({
       pdf.save(`comprobante_adelanto_${ventaData.ventCod}.pdf`);
     } catch (error) {
       console.error('Error generando PDF:', error);
-      alert('Error al generar PDF. Intenta de nuevo.');
+      notifyError('Error al generar PDF. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }

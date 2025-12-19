@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import DataTable, { type Column } from "../../../../components/Table/DataTable";
 import clientService, { type Client } from "../../../../services/clientService";
 import ClientForm from "./ClienteForm";
+import { notifyError } from "../../../../shared/notifications";
 
 interface ClientesProps {
   onAddReceta?: (cliente: Client) => void;
@@ -63,7 +64,7 @@ export default function Clientes({ onAddReceta, onVerRecetas }: ClientesProps) {
         fetchClients();
       } catch (err) {
         console.error("Error eliminando cliente:", err);
-        alert("Error al eliminar cliente");
+        notifyError("Error al eliminar cliente");
       }
     }
   };

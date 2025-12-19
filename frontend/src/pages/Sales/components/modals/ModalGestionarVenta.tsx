@@ -8,6 +8,7 @@ import ComprobanteSunatModal from './ComprobanteSUNATModal';
 import * as branchService from '../../../../services/branchService';
 import * as productService from '../../../../services/inventoryService';
 import type { VentaDetalleItem } from '../types/venta';
+import { notifyError, notifySuccess, notifyWarning } from '../../../../shared/notifications';
 
 interface ModalGestionarVentaProps {
   venta: VentaResponse;
@@ -169,7 +170,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
 
   const handleRegistrarPago = async () => {
     if (!montoPago || parseFloat(montoPago) <= 0) {
-      alert('Ingrese un monto válido');
+      notifyWarning('Ingrese un monto válido');
       return;
     }
   
@@ -182,7 +183,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
         tarjeta_tipo: tarjetaTipo,
       });
       
-      alert(`Pago registrado exitosamente. Saldo actual: S/ ${data.saldo_actual}`);
+      notifySuccess(`Pago registrado exitosamente. Saldo actual: S/ ${data.saldo_actual}`);
       setMontoPago('');
       setReferenciaPago('');
       setShowPagoForm(false);
@@ -190,7 +191,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
       onVentaActualizada();
     } catch (error: any) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'Error al registrar el pago');
+      notifyError(error.response?.data?.error || 'Error al registrar el pago');
     } finally {
       setLoading(false);
     }
@@ -202,12 +203,12 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
     setLoading(true);
     try {
       const data = await saleService.enviarLaboratorio(ventaActual.ventCod);
-      alert(data.mensaje);
+      notifySuccess(data.mensaje);
       await fetchVentaCompleta();
       onVentaActualizada();
     } catch (error: any) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'Error al enviar al laboratorio');
+      notifyError(error.response?.data?.error || 'Error al enviar al laboratorio');
     } finally {
       setLoading(false);
     }
@@ -219,12 +220,12 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
     setLoading(true);
     try {
       const data = await saleService.marcarListo(ventaActual.ventCod);
-      alert(data.mensaje);
+      notifySuccess(data.mensaje);
       await fetchVentaCompleta();
       onVentaActualizada();
     } catch (error: any) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'Error al marcar como listo');
+      notifyError(error.response?.data?.error || 'Error al marcar como listo');
     } finally {
       setLoading(false);
     }
@@ -236,12 +237,12 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
     setLoading(true);
     try {
       const data = await saleService.marcarEntregado(ventaActual.ventCod);
-      alert(data.mensaje);
+      notifySuccess(data.mensaje);
       await fetchVentaCompleta();
       onVentaActualizada();
     } catch (error: any) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'Error al marcar como entregado');
+      notifyError(error.response?.data?.error || 'Error al marcar como entregado');
     } finally {
       setLoading(false);
     }
@@ -266,7 +267,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
   
       const data = await saleService.enviarASunat(comprobanteData.comprCod);
       
-      alert(`✅ ${data.mensaje || 'Comprobante enviado a SUNAT exitosamente'}`);
+      notifySuccess(data.mensaje || 'Comprobante enviado a SUNAT exitosamente');
       
       await fetchVentaCompleta();
       onVentaActualizada();
@@ -275,11 +276,11 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
       console.error('Error enviando a SUNAT:', error);
       
       if (error.message?.includes('No se encontró comprobante')) {
-        alert('❌ ' + error.message);
+        notifyError(error.message);
       } else if (error.response?.data?.error) {
-        alert(`❌ Error: ${error.response.data.error}`);
+        notifyError(`Error: ${error.response.data.error}`);
       } else {
-        alert('❌ Error al enviar a SUNAT: ' + error.message);
+        notifyError('Error al enviar a SUNAT: ' + error.message);
       }
     } finally {
       setLoading(false);
@@ -288,7 +289,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
 
   const handleAnularVenta = async () => {
     if (!motivoAnulacion.trim()) {
-      alert('Ingrese el motivo de anulación');
+      notifyWarning('Ingrese el motivo de anulación');
       return;
     }
   
@@ -299,12 +300,12 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
       const data = await saleService.anularVenta(ventaActual.ventCod, {
         motivo: motivoAnulacion,
       });
-      alert(data.mensaje);
+      notifySuccess(data.mensaje);
       onVentaActualizada();
       onClose();
     } catch (error: any) {
       console.error('Error:', error);
-      alert(error.response?.data?.error || 'Error al anular la venta');
+      notifyError(error.response?.data?.error || 'Error al anular la venta');
     } finally {
       setLoading(false);
     }
@@ -323,7 +324,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
 
   const handleDescargarPDF = async () => {
     if (!comprobanteId) {
-      alert('No hay comprobante disponible');
+      notifyWarning('No hay comprobante disponible');
       return;
     }
   
@@ -336,7 +337,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
       descargarArchivo(blob, filename);
     } catch (error: any) {
       console.error('Error descargando PDF:', error);
-      alert(error.response?.data?.error || 'Error al descargar PDF');
+      notifyError(error.response?.data?.error || 'Error al descargar PDF');
     } finally {
       setLoading(false);
     }
@@ -344,7 +345,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
   
   const handleDescargarXML = async () => {
     if (!comprobanteId) {
-      alert('No hay comprobante disponible');
+      notifyWarning('No hay comprobante disponible');
       return;
     }
   
@@ -357,7 +358,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
       descargarArchivo(blob, filename);
     } catch (error: any) {
       console.error('Error descargando XML:', error);
-      alert(error.response?.data?.error || 'Error al descargar XML');
+      notifyError(error.response?.data?.error || 'Error al descargar XML');
     } finally {
       setLoading(false);
     }
@@ -365,7 +366,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
   
   const handleDescargarCDR = async () => {
     if (!comprobanteId) {
-      alert('No hay comprobante disponible');
+      notifyWarning('No hay comprobante disponible');
       return;
     }
   
@@ -378,7 +379,7 @@ const ModalGestionarVenta = ({ venta, isOpen, onClose, onVentaActualizada }: Mod
       descargarArchivo(blob, filename);
     } catch (error: any) {
       console.error('Error descargando CDR:', error);
-      alert(error.response?.data?.error || 'Error al descargar CDR');
+      notifyError(error.response?.data?.error || 'Error al descargar CDR');
     } finally {
       setLoading(false);
     }

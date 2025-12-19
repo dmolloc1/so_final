@@ -8,6 +8,7 @@ import type { Product } from '../../../../types/product';
 import type { CartItem } from '../../../../types/sale';
 import { saleService } from '../../../../services/saleService';
 import { getCurrentUser } from '../../../../auth/services/userService';
+import { notifyError, notifySuccess, notifyWarning } from '../../../../shared/notifications';
 
 const SalePoint: React.FC = () => {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ const SalePoint: React.FC = () => {
       const maxStock = product.stock_disponible || 0;
       
       if (existingItem.quantity >= maxStock) {
-        alert(`Stock máximo alcanzado (${maxStock} unidades)`);
+        notifyWarning(`Stock máximo alcanzado (${maxStock} unidades)`);
         return;
       }
 
@@ -177,13 +178,13 @@ const handleProcessSale = async (saleData: any) => {
 
     // Validaciones antes de procesar
     if (adelanto < 0) {
-      alert('El adelanto no puede ser negativo');
+      notifyWarning('El adelanto no puede ser negativo');
       setProcessingSale(false);
       return;
     }
 
     if (adelanto > totals.total) {
-      alert('El adelanto no puede ser mayor al total de la venta');
+      notifyWarning('El adelanto no puede ser mayor al total de la venta');
       setProcessingSale(false);
       return;
     }
@@ -254,7 +255,7 @@ const handleProcessSale = async (saleData: any) => {
       `Método: ${saleData.paymentMethod}`;
 
 
-    alert(mensajeExito);
+    notifySuccess(mensajeExito, { duration: 8000 });
 
     // 5. LIMPIAR CARRITO Y RESETEAR ESTADOS
     setCart([]);
@@ -282,7 +283,7 @@ const handleProcessSale = async (saleData: any) => {
       errorMessage = error.message;
     }
 
-    alert(`Error al procesar la venta\n\n${errorMessage}`);
+    notifyError(`Error al procesar la venta\n\n${errorMessage}`);
   } finally {
     setProcessingSale(false);
   }

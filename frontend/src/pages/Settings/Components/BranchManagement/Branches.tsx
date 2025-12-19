@@ -15,6 +15,7 @@ import ReloadButton from '../../../../components/Common/ReloadButton';
 // Type
 import type { Branch } from '../../../../types/branch';
 import DeleteConfirmModal from '../BranchManagement/DeleteConfirmModal';
+import { notifyError } from '../../../../shared/notifications';
 
 //Para actualizar las branches
 import { useBranchesContext } from './ContextBranches';
@@ -96,7 +97,7 @@ const Branches: React.FC = () => {
         console.log('Sucursal eliminada exitosamente');
     } catch (err: any) {
         console.error('Error al eliminar:', err);
-        alert('Error al eliminar la sucursal');
+        notifyError('Error al eliminar la sucursal');
     } finally {
         setLoading(false);
         setConfirmDeleteOpen(false);

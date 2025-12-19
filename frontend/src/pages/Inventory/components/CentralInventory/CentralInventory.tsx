@@ -8,6 +8,7 @@ import type { User } from '../../../../auth/types/user';
 import type { Product } from '../../../../types/product';
 import Modal from '../../../../components/Modal/modal';
 import BarcodeDisplay from '../../../../shared/BarcodeDisplay';
+import { notifyError, notifySuccess, notifyWarning } from '../../../../shared/notifications';
 
 interface CentralInventoryProps {
   user: User;
@@ -73,7 +74,7 @@ const CentralInventory: React.FC<CentralInventoryProps> = ({  }) => {
       setProducts(merged);
       setFilteredProducts(merged);
     } catch (error) {
-      alert('Error al cargar los productos. Revisa la consola para más detalles.');
+      notifyError('Error al cargar los productos. Revisa la consola para más detalles.');
     } finally {
       setLoading(false);
     }
@@ -108,7 +109,7 @@ const CentralInventory: React.FC<CentralInventoryProps> = ({  }) => {
 
   const handleShowBarcode = (product: Product) => {
     if (!product.prodBarcode) {
-      alert('Este producto no tiene código de barras generado.');
+      notifyWarning('Este producto no tiene código de barras generado.');
       return;
     }
     setBarcodeProduct(product);
@@ -134,10 +135,10 @@ const CentralInventory: React.FC<CentralInventoryProps> = ({  }) => {
       setBarcodeProduct(updated);
       setShowBarcodeModal(true);
       
-      alert('Código de barras generado exitosamente');
+      notifySuccess('Código de barras generado exitosamente');
     } catch (error) {
       console.error('Error al generar código de barras:', error);
-      alert('Error al generar el código de barras');
+      notifyError('Error al generar el código de barras');
     }
   };
 
@@ -161,10 +162,10 @@ const CentralInventory: React.FC<CentralInventoryProps> = ({  }) => {
       
       setBarcodeProduct(updated);
       
-      alert('Código de barras regenerado exitosamente');
+      notifySuccess('Código de barras regenerado exitosamente');
     } catch (error) {
       console.error('Error al regenerar código de barras:', error);
-      alert('Error al regenerar el código de barras');
+      notifyError('Error al regenerar el código de barras');
     }
   };
 

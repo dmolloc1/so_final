@@ -3,6 +3,7 @@ import { Search, Loader, Barcode } from 'lucide-react';
 import type { Product } from '../../../../types/product';
 import { productService } from '../../../../services/inventoryService';
 import { getCurrentUser } from '../../../../auth/services/userService';
+import { notifyWarning } from '../../../../shared/notifications';
 
 interface ProductSearchProps {
   searchQuery: string;
@@ -156,7 +157,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({
     const hasStock = (product.stock_disponible || 0) > 0;
     
     if (!hasStock) {
-      alert(`El producto "${product.prodDescr}" no tiene stock disponible.`);
+      notifyWarning(`El producto "${product.prodDescr}" no tiene stock disponible.`);
       return;
     }
     
@@ -252,10 +253,10 @@ const ProductResultItem: React.FC<{
   const hasStock = (product.stock_disponible || 0) > 0;
   
   const handleClick = () => {
-    if (!hasStock) {
-      alert(`El producto "${product.prodDescr}" no tiene stock disponible.`);
-      return;
-    }
+        if (!hasStock) {
+          notifyWarning(`El producto "${product.prodDescr}" no tiene stock disponible.`);
+          return;
+        }
     onSelect(product);
   };
   

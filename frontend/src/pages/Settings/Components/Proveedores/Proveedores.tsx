@@ -16,6 +16,7 @@ import AddButton from '../../../../components/Common/AddButton';
 import SearchInput from '../../../../components/Common/SearchInput';
 import RemoveButton from '../../../../components/Common/RemoveButton';
 import ReloadButton from '../../../../components/Common/ReloadButton';
+import { notifyError } from '../../../../shared/notifications';
 
 const Proveedores: React.FC = () => {
   // Estado para almacenar los proveedores
@@ -85,7 +86,7 @@ const Proveedores: React.FC = () => {
         console.log('Proveedor eliminado exitosamente');
       } catch (err: any) {
         console.error('Error al eliminar:', err);
-        alert('Error al eliminar el proveedor');
+        notifyError('Error al eliminar el proveedor');
       }
     }
   };
