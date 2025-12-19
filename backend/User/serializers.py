@@ -82,11 +82,30 @@ class UserSerializer(serializers.ModelSerializer):
         representation['roles'] = RoleSerializer(instance.roles.all(), many=True).data
         return representation
 
+class OptometraUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OptometraUser
+        fields = ['user', 'optCargo', 'optCMP', 'optRNE']
+
+    def validate_user(self, value):
+        if not value.roles.filter(rolNom='OPTOMETRA').exists():
+            raise serializers.ValidationError(
+                "El usuario no tiene el rol OPTOMETRA"
+            )
+
+        if hasattr(value, 'optometra'):
+            raise serializers.ValidationError(
+                "Este usuario ya tiene un perfil de optómetra"
+            )
+
+        return value
+
 # Serializer específico para el usuario actual (opcional pero recomendado)
 class CurrentUserSerializer(serializers.ModelSerializer):
     roles = RoleSerializer(many=True, read_only=True)
     password = serializers.CharField(default='', read_only=True)  # Frontend lo requiere vacío
     sucursal = serializers.SerializerMethodField()
+    optometra = OptometraUserSerializer(read_only=True)
 
     class Meta:
         model = User
@@ -112,21 +131,3 @@ class CurrentUserSerializer(serializers.ModelSerializer):
                 'sucurNom': obj.sucurCod.sucurNom,
             }
         return None
-
-class OptometraUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = OptometraUser
-        fields = ['user', 'optCargo', 'optCMP', 'optRNE']
-
-    def validate_user(self, value):
-        if not value.roles.filter(rolNom='OPTOMETRA').exists():
-            raise serializers.ValidationError(
-                "El usuario no tiene el rol OPTOMETRA"
-            )
-
-        if hasattr(value, 'optometra'):
-            raise serializers.ValidationError(
-                "Este usuario ya tiene un perfil de optómetra"
-            )
-
-        return value

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Modal from "../../../../components/Modal/modal";
 import FormInput from "../../../../components/Forms/FormInput";
 import api from "../../../../auth/services/api";
-import type { Client } from "../../../../services/clientService";
+import clientService, { type Client } from "../../../../services/clientService";
 import type { Recipe } from "../../../../types/recipe";
 import { useAuth } from "../../../../auth/hooks/useAuth";
 import { notifyError, notifyWarning } from "../../../../shared/notifications";
@@ -92,6 +92,12 @@ export default function RecipeForm({
   
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const fechaNacPorDefecto = "1990-01-01";
+
+  const normalizarFechaNac = (fecha?: string | null) => {
+    if (!fecha) return fechaNacPorDefecto;
+    return fecha.split("T")[0];
+  };
 
   // Cargar datos si está editando
   useEffect(() => {
@@ -100,7 +106,7 @@ export default function RecipeForm({
         dni: editingRecipe.cliente_documento || "",
         tipoDoc: editingRecipe.cliente_tipo_doc || "DNI",
         nombre: editingRecipe.cliente_nombre || "",
-        fecha_nac: "",
+        fecha_nac: fechaNacPorDefecto,
         telefono: "",
         recTipoLente: editingRecipe.recTipoLente || "Mixto",
         dpGeneral: editingRecipe.dpGeneral?.toString() || "",
@@ -131,27 +137,64 @@ export default function RecipeForm({
         observaciones: editingRecipe.recObservaciones || "",
       });
     }
-  }, [editingRecipe]);
+  }, [editingRecipe, fechaNacPorDefecto]);
+
+  useEffect(() => {
+    if (!editingRecipe?.cliente) return;
+    let activo = true;
+
+    const cargarCliente = async () => {
+      try {
+        const cliente = await clientService.getById(editingRecipe.cliente);
+        if (!activo) return;
+
+        const nombre = cliente.cli_nombre || "";
+        const apellido = cliente.cli_apellido || "";
+        const telefono = cliente.cli_telefono || "";
+
+        setPaciente(cliente);
+        setFormData((prev) => ({
+          ...prev,
+          dni: prev.dni || cliente.cli_dni || "",
+          tipoDoc: prev.tipoDoc || cliente.cli_tipo_doc || "DNI",
+          nombre: prev.nombre || `${nombre} ${apellido}`.trim(),
+          fecha_nac: prev.fecha_nac || normalizarFechaNac(cliente.cli_fecha_nac),
+          telefono: prev.telefono || telefono,
+        }));
+      } catch (error) {
+        console.error("Error cargando cliente:", error);
+        setFormData((prev) => ({
+          ...prev,
+          fecha_nac: prev.fecha_nac || fechaNacPorDefecto,
+        }));
+      }
+    };
+
+    cargarCliente();
+
+    return () => {
+      activo = false;
+    };
+  }, [editingRecipe, fechaNacPorDefecto]);
 
   // Cargar cliente preseleccionado
   useEffect(() => {
     if (clienteSeleccionado) {
       setPaciente(clienteSeleccionado);
-      
-      // Mapeo de campos antiguos y nuevos para mayor compatibilidad
-      const nombre = clienteSeleccionado.cli_nombre || clienteSeleccionado.cliNombre || "";
-      const apellido = clienteSeleccionado.cli_apellido || clienteSeleccionado.cliApellido || "";
-      const numDoc = clienteSeleccionado.cli_num_doc || clienteSeleccionado.cliNumDoc || "";
-      const tipoDoc = clienteSeleccionado.cli_tipo_doc || clienteSeleccionado.cliTipoDoc || "DNI";
-      const fechaNac = clienteSeleccionado.cli_fecha_nac || clienteSeleccionado.cliFechaNac || "";
-      const telefono = clienteSeleccionado.cli_telefono || clienteSeleccionado.cliTelefono || "";
-      
+
+      const nombre = clienteSeleccionado.cli_nombre || "";
+      const apellido = clienteSeleccionado.cli_apellido || "";
+      const numDoc = clienteSeleccionado.cli_dni || "";
+      const tipoDoc = clienteSeleccionado.cli_tipo_doc || "DNI";
+      const fechaNac = clienteSeleccionado.cli_fecha_nac || "";
+      const telefono = clienteSeleccionado.cli_telefono || "";
+
       setFormData((prev) => ({
         ...prev,
         dni: numDoc,
         tipoDoc: tipoDoc,
         nombre: `${nombre} ${apellido}`.trim(),
-        fecha_nac: fechaNac?.split("T")[0] || "",
+        fecha_nac: normalizarFechaNac(fechaNac),
         telefono: telefono,
       }));
     }
@@ -246,31 +289,18 @@ export default function RecipeForm({
       }
 
       const cli = data[0];
-      
-      // DEBUG: Ver estructura exacta del cliente
-      console.log("=== CLIENTE ENCONTRADO ===");
-      console.log("Objeto completo:", cli);
-      console.log("Campos disponibles:", Object.keys(cli));
-      
+
       setPaciente(cli);
-      
-      // Probar múltiples variaciones de nombres de campos
-      const nombre = cli.cliNombre || cli.cli_nombre || cli.nombre || "";
-      const apellido = cli.cliApellido || cli.cli_apellido || cli.apellido || "";
-      const fechaNac = cli.cliFechaNac || cli.cli_fecha_nac || cli.fecha_nac || cli.fechaNac || "";
-      const telefono = cli.cliTelefono || cli.cli_telefono || cli.telefono || "";
-      
-      console.log("Valores mapeados:");
-      console.log("  nombre:", nombre);
-      console.log("  apellido:", apellido);
-      console.log("  fechaNac:", fechaNac);
-      console.log("  telefono:", telefono);
-      console.log("========================");
-      
+
+      const nombre = cli.cli_nombre || "";
+      const apellido = cli.cli_apellido || "";
+      const fechaNac = cli.cli_fecha_nac || "";
+      const telefono = cli.cli_telefono || "";
+
       setFormData((prev) => ({
         ...prev,
         nombre: `${nombre} ${apellido}`.trim(),
-        fecha_nac: fechaNac?.split("T")[0] || "",
+        fecha_nac: normalizarFechaNac(fechaNac),
         telefono: telefono || "",
       }));
     } catch (error) {

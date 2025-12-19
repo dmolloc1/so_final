@@ -31,6 +31,11 @@ export interface User {
   usuEstado: boolean;
   roles: Role[]; // ManyToMany  arreglo de roles
   sucurCod?: number;  //Puede ser null
+  optometra?: {
+    optCargo?: string;
+    optCMP?: string;
+    optRNE?: string;
+  };
   sucursal?: {      
     sucurCod: number;
     sucurNom: string;

@@ -20,10 +20,12 @@ class RecipeSerializer(serializers.ModelSerializer):
             'dpGeneral',
 
             'lejos_od_esf', 'lejos_od_cil', 'lejos_od_eje',
+            'lejos_od_avcc', 'lejos_od_dip',
             'lejos_oi_esf', 'lejos_oi_cil', 'lejos_oi_eje',
+            'lejos_oi_avcc', 'lejos_oi_dip',
 
-            'cerca_od_esf', 'cerca_od_cil', 'cerca_od_eje',
-            'cerca_oi_esf', 'cerca_oi_cil', 'cerca_oi_eje',
+            'cerca_od_esf', 'cerca_od_cil', 'cerca_od_eje', 'cerca_od_add',
+            'cerca_oi_esf', 'cerca_oi_cil', 'cerca_oi_eje', 'cerca_oi_add',
 
             'diagnostico',
 
@@ -67,6 +69,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 class RecipeListSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.SerializerMethodField()
+    cliente_documento = serializers.SerializerMethodField()
     optometra_nombre = serializers.SerializerMethodField()
 
     class Meta:
@@ -78,6 +81,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
             'recEstado',
             'cliente',
             'cliente_nombre',
+            'cliente_documento',
             'optometra_nombre',
         ]
 
@@ -90,3 +94,6 @@ class RecipeListSerializer(serializers.ModelSerializer):
         if obj.optometra:
             return obj.optometra.usuNombreCom or obj.optometra.usuNom
         return None
+
+    def get_cliente_documento(self, obj):
+        return obj.cliente.cliNumDoc if obj.cliente else None
