@@ -10,6 +10,7 @@ class ClienteViewSet(viewsets.ModelViewSet):
     
     filter_backends = [filters.SearchFilter]
     search_fields = ['cliNombre', 'cliApellido', 'cliNumDoc', 'cliEmail']
+    
 
     def get_queryset(self):
         queryset = super().get_queryset()

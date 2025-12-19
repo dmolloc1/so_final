@@ -12,7 +12,6 @@ import ReloadButton from "../../../../components/Common/ReloadButton";
 import DataTable from "../../../../components/Table/DataTable";
 import api from "../../../../auth/services/api";
 
-// IMPORTA EL FORMULARIO DE RECETA
 import RecetaForm from "./RecetaForm";
 
 interface RecetasProps {
@@ -30,7 +29,6 @@ export default function RecetasPage({
   const [optometristas, setOptometristas] = useState<any[]>([]);
   const [sucursales, setSucursales] = useState<any[]>([]);
 
-  // ESTADO PARA ABRIR/CERRAR EL MODAL
   const [isRecetaFormOpen, setIsRecetaFormOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
 
@@ -43,65 +41,59 @@ export default function RecetasPage({
   const [clientFilter, setClientFilter] = useState<number | string>("");
 
   const loadSucursales = async () => {
-    try {
-      const response = await api.get("/branch/");
-      const data = response.data?.data || response.data;
-      setSucursales(data);
-    } catch (error) {
-      console.error("Error cargando sucursales:", error);
-    }
+    const response = await api.get("/branch/");
+    setSucursales(response.data?.data || response.data);
   };
 
   const loadOptometristas = async () => {
-    try {
-      const response = await api.get("/user/");
-      const data = response.data?.data || response.data;
-
-      const lista = data.filter((u: any) =>
+    const response = await api.get("/user/");
+    const data = response.data?.data || response.data;
+    setOptometristas(
+      data.filter((u: any) =>
         u.roles?.some((r: any) => r.rolNom === "OPTOMETRA")
-      );
-
-      setOptometristas(lista);
-    } catch (err) {
-      console.error("Error cargando optometristas", err);
-    }
+      )
+    );
   };
 
   const loadRecipes = async () => {
     try {
+      const storedBranch = (() => {
+        try {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          return (
+            user.sucurCod ||
+            user.sucursal?.sucurCod ||
+            localStorage.getItem("sucursal") ||
+            ""
+          );
+        } catch {
+          return "";
+        }
+      })();
+
       const filters: any = {
-        search: searchTerm || undefined,
-        sucurCod: branchFilter || undefined,
+        sucurCod: branchFilter || storedBranch || undefined,
         receTipoLent: tipoLenteFilter || undefined,
-        cliCod: clientFilter || undefined,
+        usuCod: optometraFilter || undefined,
       };
+
+      if (clientFilter) {
+        filters.cliCod = clientFilter;
+      } else if (searchTerm) {
+        filters.search = searchTerm;
+      }
 
       let data = await recipeService.getAll(filters);
 
-      if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase();
-        data = data.filter((r) => {
-          const nombre = r.cliente_nombre?.toLowerCase() || "";
-          const doc = (r as any).cliente_documento?.toLowerCase?.() || "";
-          const optometra = r.optometra_nombre?.toLowerCase() || "";
-          const recetaCodigo = String(r.receCod ?? "");
-          return (
-            nombre.includes(term) ||
-            doc.includes(term) ||
-            optometra.includes(term) ||
-            recetaCodigo.includes(term)
-          );
-        });
-      }
-
       if (fechaInicio)
-        data = data.filter((r) => new Date(r.receFech) >= new Date(fechaInicio));
+        data = data.filter(
+          (r) => new Date(r.receFech) >= new Date(fechaInicio)
+        );
 
       if (fechaFin)
-        data = data.filter((r) => new Date(r.receFech) <= new Date(fechaFin));
-
-      if (optometraFilter)
-        data = data.filter((r) => String(r.usuCod) === String(optometraFilter));
+        data = data.filter(
+          (r) => new Date(r.receFech) <= new Date(fechaFin)
+        );
 
       setRecipes(data);
     } catch (error) {
@@ -128,17 +120,17 @@ export default function RecetasPage({
 
   useEffect(() => {
     if (clienteSeleccionado?.cli_cod) {
+      setSearchTerm("");
       setClientFilter(clienteSeleccionado.cli_cod);
-      if (clienteSeleccionado.cli_dni) {
-        setSearchTerm(clienteSeleccionado.cli_dni);
-      }
+
+      setTimeout(() => {
+        loadRecipes();
+      }, 0);
     }
   }, [clienteSeleccionado]);
 
   useEffect(() => {
-    if (forzarAperturaFormulario) {
-      setIsRecetaFormOpen(true);
-    }
+    if (forzarAperturaFormulario) setIsRecetaFormOpen(true);
   }, [forzarAperturaFormulario]);
 
   const columns = [
@@ -150,10 +142,11 @@ export default function RecetasPage({
     {
       key: "receFech",
       label: "Fecha",
-      render: (row: Recipe) => new Date(row.receFech).toLocaleDateString(),
+      render: (row: Recipe) =>
+        new Date(row.receFech).toLocaleDateString(),
     },
     {
-      key: "cliCod",
+      key: "cliente_documento",
       label: "Documento Cliente",
       render: (row: Recipe) => row.cliente_documento || "—",
     },
@@ -172,8 +165,7 @@ export default function RecetasPage({
               setEditingRecipe(row);
               setIsRecetaFormOpen(true);
             }}
-            className="p-1.5 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors"
-            title="Editar"
+            className="p-1.5 bg-blue-100 text-blue-600 rounded"
           >
             <Edit2 className="w-4 h-4" />
           </button>
@@ -181,14 +173,13 @@ export default function RecetasPage({
             onClick={async () => {
               if (
                 row.receCod &&
-                window.confirm("¿Deseas eliminar esta receta de forma permanente?")
+                confirm("¿Deseas eliminar esta receta?")
               ) {
                 await recipeService.delete(row.receCod);
                 loadRecipes();
               }
             }}
-            className="p-1.5 bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
-            title="Eliminar"
+            className="p-1.5 bg-red-100 text-red-600 rounded"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -204,27 +195,24 @@ export default function RecetasPage({
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">Gestión de Recetas</h1>
-
         <div className="flex gap-3">
           <ReloadButton onClick={loadRecipes} />
-
-          {/* BOTÓN PARA ABRIR FORMULARIO */}
           <AddButton onClick={() => setIsRecetaFormOpen(true)}>
             + Nueva Receta
           </AddButton>
         </div>
       </div>
 
-      {/* FILTROS */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-
         <SearchInput
           value={searchTerm}
-          onChange={setSearchTerm}
-          placeholder="Documento (DNI o CE)"
+          onChange={(value) => {
+            setSearchTerm(value);
+            setClientFilter(""); 
+          }}
+          placeholder="Buscar por DNI, nombre u optómetra"
         />
 
-        {/* SUCURSALES */}
         <select
           value={branchFilter}
           onChange={(e) => setBranchFilter(e.target.value)}
@@ -238,7 +226,6 @@ export default function RecetasPage({
           ))}
         </select>
 
-        {/* OPTÓMETRAS */}
         <select
           value={optometraFilter}
           onChange={(e) => setOptometraFilter(e.target.value)}
@@ -252,7 +239,6 @@ export default function RecetasPage({
           ))}
         </select>
 
-        {/* TIPOS DE LENTE */}
         <select
           value={tipoLenteFilter}
           onChange={(e) => setTipoLenteFilter(e.target.value)}
@@ -289,14 +275,14 @@ export default function RecetasPage({
           onFormularioCerrado?.();
         }}
         onSubmit={async (data) => {
-          const payload = {
-            ...(data as Partial<Recipe>),
-            receFech: (data as Partial<Recipe>).receFech ?? new Date().toISOString(),
-          } as Omit<Recipe, "receCod">;
-
           if (editingRecipe?.receCod) {
-            await recipeService.update(editingRecipe.receCod, payload);
+            await recipeService.update(editingRecipe.receCod, data);
           } else {
+            const payload: Omit<Recipe, "receCod"> = {
+              ...data,
+              receFech: data.receFech ?? new Date().toISOString(),
+            } as Omit<Recipe, "receCod">;
+
             await recipeService.create(payload);
           }
 

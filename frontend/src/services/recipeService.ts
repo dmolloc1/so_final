@@ -1,38 +1,54 @@
-import type { Recipe, RecipeFilters } from '../types/recipe';
 import api from "../auth/services/api";
+import type { Recipe } from "../types/recipe";
 
-export const recipeService = {
+interface RecipeFilters {
+  sucurCod?: number | string;
+  cliCod?: number | string;
+  usuCod?: number | string;
+  receTipoLent?: string;
+  search?: string;
+  ordering?: string;
+}
+
+class RecipeService {
+  private endpoint = "/recipes";
+
   async getAll(filters?: RecipeFilters): Promise<Recipe[]> {
-    const response = await api.get('/recipes/', { params: filters });
-    const payload = response.data;
+    const params = new URLSearchParams();
 
-    if (Array.isArray(payload)) return payload;
-    if (Array.isArray(payload?.data)) return payload.data;
-    if (Array.isArray(payload?.results)) return payload.results;
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== "") {
+          params.append(key, String(value));
+        }
+      });
+    }
 
-    return [];
-  },
+    const response = await api.get(`${this.endpoint}/`, { params });
+
+    if (response.data?.results) return response.data.results;
+    if (Array.isArray(response.data)) return response.data;
+    return response.data?.data || [];
+  }
 
   async getById(id: number): Promise<Recipe> {
-    const response = await api.get(`/recipes/${id}/`);
-    return response.data?.data || response.data;
-  },
+    const response = await api.get(`${this.endpoint}/${id}/`);
+    return response.data;
+  }
 
-  async create(recipe: Omit<Recipe, 'receCod'>): Promise<Recipe> {
-    const response = await api.post('/recipes/', recipe);
-    return response.data?.data || response.data;
-  },
+  async create(data: Omit<Recipe, "receCod">): Promise<Recipe> {
+    const response = await api.post(`${this.endpoint}/`, data);
+    return response.data;
+  }
 
-  async update(id: number, recipe: Partial<Recipe>): Promise<Recipe> {
-    const response = await api.put(`/recipes/${id}/`, recipe);
-    return response.data?.data || response.data;
-  },
+  async update(id: number, data: Partial<Recipe>): Promise<Recipe> {
+    const response = await api.put(`${this.endpoint}/${id}/`, data);
+    return response.data;
+  }
 
   async delete(id: number): Promise<void> {
-    await api.delete(`/recipes/${id}/`);
-  },
+    await api.delete(`${this.endpoint}/${id}/`);
+  }
+}
 
-
-};
-
-export default recipeService;
+export const recipeService = new RecipeService();
