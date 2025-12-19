@@ -18,7 +18,6 @@ interface RecetaFormProps {
 interface FormErrors {
   tipoDoc?: string;
   dni?: string;
-  paciente?: string;
   receTipoLent?: string;
   distPupilar?: string;
   lejos_od_esf?: string;
@@ -109,12 +108,13 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
       }
     }
 
-
     if (!formData.receTipoLent.trim()) {
       newErrors.receTipoLent = "El tipo de lente es obligatorio.";
     }
 
-    if (formData.distPupilar.trim() && !isValidNumber(formData.distPupilar)) {
+    if (!formData.distPupilar.trim()) {
+      newErrors.distPupilar = "La distancia pupilar es obligatoria.";
+    } else if (!isValidNumber(formData.distPupilar)) {
       newErrors.distPupilar = "La distancia pupilar debe ser un número.";
     }
 
@@ -139,15 +139,12 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
       { key: "cerca_oi_add", value: formData.cerca_oi_add, label: "Cerca OI ADD" },
     ];
 
-    const hasAnyNumericValue = numericFields.some(({ value }) => value.trim() !== "");
-
-    if (!hasAnyNumericValue) {
-      newErrors.lejos_od_esf =
-        "Ingresa al menos un valor en la medición de vista.";
-    }
-
     numericFields.forEach(({ key, value, label }) => {
-      if (value.trim() && !isValidNumber(value)) {
+      if (!value.trim()) {
+        newErrors[key] = `${label} es obligatorio.`;
+        return;
+      }
+      if (!isValidNumber(value)) {
         newErrors[key] = `${label} debe ser un número válido.`;
       }
     });
@@ -212,9 +209,6 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
 
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-    if (name === "dni" && errors.paciente) {
-      setErrors((prev) => ({ ...prev, paciente: undefined }));
     }
   };
 
@@ -400,11 +394,6 @@ export default function RecetaForm({ isOpen, onClose, onSubmit }: RecetaFormProp
                 />
                 {errors.dni && (
                   <p className="mt-1 text-xs text-red-500">{errors.dni}</p>
-                )}
-                {errors.paciente && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors.paciente}
-                  </p>
                 )}
               </div>
 
